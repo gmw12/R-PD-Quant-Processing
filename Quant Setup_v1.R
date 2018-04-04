@@ -2,8 +2,8 @@
 # User input
 #-------------------------------------------
 
-my_data <- read_excel("Z:\\proteomics2\\RawData\\4991\\4991 PD Quant\\4991_Raw_040318b.xlsx", 1)
-file_prefix <- "4991_040318"
+my_data <- read_excel("d:\\Code\\Data\\4991_Protein_040418.xlsx", 1)
+file_prefix <- "4991_040418_carbox"
 sample_list <- c("37387", "37388", "37389", "37390", "37391", "37392", 
                  "37393_01", "37393_02", "37393_03")
 group_list <- c("Syn", "Bio", "QCPool")

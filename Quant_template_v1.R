@@ -2,10 +2,25 @@
 options(scipen = 999)
 options(digits=3)
 
-
 data_raw <- my_data
 #set NA to 1
 data_raw[is.na(data_raw)] <- 1
+
+#----- edit column headers
+col_headers <- colnames(data_raw) 
+col_headers <- str_replace(col_headers, "Protein FDR Confidence: Mascot", "Confidence")
+col_headers <- str_replace(col_headers, "Protein FDR Confidence: Combined", "Confidence")
+col_headers <- str_replace(col_headers," \\(by Search Engine\\): Mascot", "")
+col_headers <- str_replace(col_headers,"\\[", "")
+col_headers <- str_replace(col_headers,"\\]", "")
+#col_headers <- str_replace(col_headers, "Abundance: ", "")
+#col_headers <- str_replace(col_headers, "Sample, ", "")
+#col_headers <- str_replace(col_headers, "F13: ", "")
+colnames(data_raw) <- col_headers
+info_headers <- colnames(data_raw[1:info_columns])
+final_sample_header <- c(info_headers, sample_header)
+
+
 
 # filter list, only "High", delete proteins with no ID in any sample
 total_columns <- ncol(data_raw)
@@ -18,20 +33,6 @@ data_high <- cbind(data_high, total_row)
 data_high <- subset(data_high, total_row > sample_number)  # remove all lines without data !=0)
 data_high <- data_high[1:total_columns]
 
-
-#----- edit column headers
-col_headers <- colnames(data_raw) 
-col_headers <- str_replace(col_headers, "Protein FDR Confidence: Mascot", "Confidence")
-col_headers <- str_replace(col_headers," \\(by Search Engine\\): Mascot", "")
-col_headers <- str_replace(col_headers,"\\[", "")
-col_headers <- str_replace(col_headers,"\\]", "")
-#col_headers <- str_replace(col_headers, "Abundance: ", "")
-#col_headers <- str_replace(col_headers, "Sample, ", "")
-#col_headers <- str_replace(col_headers, "F13: ", "")
-colnames(data_raw) <- col_headers
-info_headers <- colnames(data_raw[1:info_columns])
-final_sample_header <- c(info_headers, sample_header)
-
 # save the annotation columns (gene symbol and protein accession) for later and remove from data frame
 annotate_df <- data_high[1:info_columns]
 data_high <- data_high[(info_columns+1):total_columns]
@@ -42,7 +43,7 @@ row.names(data_high) <- annotate_df$`Accession`
 # SL Normalized 
 #--------------------------------------------
 # global scaling value, sample loading normalization
-target <- mean(colSums((data_high)))
+target <- mean(colSums(data_high))
 norm_facs <- target / colSums(data_high)
 data_high_sl <- sweep(data_high, 2, norm_facs, FUN = "*")
 
