@@ -39,7 +39,7 @@ row.names(data_high) <- annotate_df$`Accession`
 
 
 #---------------------------------------------
-# SL Normalize Data
+# SL Normalized 
 #--------------------------------------------
 # global scaling value, sample loading normalization
 target <- mean(colSums((data_high)))
@@ -47,18 +47,17 @@ norm_facs <- target / colSums(data_high)
 data_high_sl <- sweep(data_high, 2, norm_facs, FUN = "*")
 
 #---------------------------------------------
-# TMM from Raw
+# TMM Normalized 
 #--------------------------------------------
 raw_tmm <- calcNormFactors(data_high, method = "TMM", sumTrim = 0.1)
 data_high_tmm <- sweep(data_high, 2, raw_tmm, FUN = "/") # this is data after SL and TMM on original scale
 
 #---------------------------------------------
-# TMM & SL Normalized Data
+# TMM & SL Normalized
 #--------------------------------------------
 # see exactly what TMM does with SL data
 sl_tmm <- calcNormFactors(data_high_sl, method = "TMM", sumTrim = 0.1)
 data_high_sl_tmm <- sweep(data_high_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
-
 
 #-------------------------------------------
 # Plots
@@ -182,4 +181,32 @@ adh_raw_bar <- colSums(adh_test_raw)
 barplot(adh_raw_bar, 
         col = color_list,
         main = "ADH")
+
+
+
+#---------------------------------------------
+# Carbox Normalized Data
+#--------------------------------------------
+# global scaling value, sample loading normalization
+carbox_list <- c("Q05920", "Q91ZA3")
+carbox_raw <-subset(data_high, rownames(test_data) %in% carbox_list)
+target <- mean(colSums((carbox_raw)))
+norm_facs <- target / colSums(carbox_raw)
+data_high_carbox <- sweep(data_high, 2, norm_facs, FUN = "*")
+
+#--Carbox, Normalized Data---------------------------------
+boxplot_gw(data_high_carbox, "Carbox, Normalized")
+plotMDS_gw(data_high_carbox,"Carbox, Normalized Data_Multidimension Scaling")
+data_high_bar <- colSums(data_high_carbox)
+barplot_gw(data_high_bar, "Carbox, Normalized")
+plotDensities_gw(data_high_carbox, "Carbox, Normalized")
+PCA_gw(data_high_carbox, "Carbox, Normalized")
+
+data_high_carbox_final <- stat_test_gw(data_high_carbox, "Carbox Normalized")
+
+#fix headers
+colnames(data_high_carbox_final) <- final_sample_header
+
+#--csv for large peptide output
+write.csv(data.frame(data_high_carbox_final), file= str_c(file_prefix, "_final.csv", collapse = " "))
 
