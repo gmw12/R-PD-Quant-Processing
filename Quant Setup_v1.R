@@ -11,12 +11,13 @@ group_rep <- c(3,3,3)
 group_color <- c("red", "green", "blue")
 group_comp <- c(1,2)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
 
-#----------------------------------------------------------
 
+#-------------------------------------------------------------------------------------------------
+#Number of variables are not hardcoded, below creates lists of variables needed for processing
+#-------------------------------------------------------------------------------------------------
 sample_number <- sum(group_rep)
 group_number <- length(group_rep)
 comp_number <- length(group_comp)/2
-
 
 comp_fc_groups <- ""
 comp_fc2_groups <- ""
@@ -72,6 +73,7 @@ for(i in 1:comp_number) {
   sample_header <- c(sample_header, comp_fc_groups[i], comp_fc2_groups[i], comp_pval_groups[i])
 }
 
+# create subdirectory to store csv and plots
 ifelse(!dir.exists(file.path(".", "output_files")), dir.create(file.path(".", "output_files")), FALSE)
 output_dir <- ".//output_files//"
 file_prefix <- str_c(output_dir, file_prefix)

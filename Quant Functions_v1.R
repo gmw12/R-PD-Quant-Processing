@@ -44,6 +44,7 @@ percentCV_gw <- function(x) {
   return(signif(cv, digits = 3))
 }
 
+#Box plot-------------------------------------------------
 boxplot_gw <- function(x,y) {
   png(filename=paste(output_dir, y, "_boxplot.png"), width = 888, height = 571)
   boxplot(log2(x), 
@@ -58,6 +59,7 @@ boxplot_gw <- function(x,y) {
   dev.off()
 }
 
+#MDS Plot-------------------------------------------------
 plotMDS_gw <- function(x,y) {
   png(filename=paste(output_dir, y, "_MDS.png"), width = 888, height = 571)  
   plotMDS(log2(x), 
@@ -66,6 +68,7 @@ plotMDS_gw <- function(x,y) {
  dev.off()
 }
 
+#Bar plot-------------------------------------------------
 barplot_gw <- function(x,y) {
   png(filename=paste(output_dir, y, "_barplot.png"), width = 888, height = 571)  
   barplot(x, 
@@ -85,8 +88,7 @@ plotDensities_gw <- function(x,y) {
 
 
 
-
-    #PcA 3D, 2D
+#PCA 2D 3D-------------------------------------------------
 PCA_gw <- function(x,y) {
     x_transpose <- t(x)
     x_transpose <-data.frame(x_transpose)
@@ -112,7 +114,7 @@ PCA_gw <- function(x,y) {
     return("done")
 }
 
-
+#Volcano-------------------------------------------------
 volcano_gw <- function(x,y,z,title)
 {
   file_name <- str_c(output_dir, title, "_volcano.png")
@@ -131,7 +133,7 @@ volcano_gw <- function(x,y,z,title)
 }
 
 
-
+#Percent CV-------------------------------------------------
 stat_cv_gw <- function(x) {
   
   # separate by treatment
@@ -143,7 +145,7 @@ stat_cv_gw <- function(x) {
   }   
 }
 
-
+#Fold change, pvalue, export volcano, return organized table for output-------------------------------------------------
 stat_test_gw <- function(x, title) {
   title <- title
   for(i in 1:group_number) 
@@ -179,7 +181,7 @@ stat_test_gw <- function(x, title) {
     z <- z +2
   }
   
-
+  # volcano
   for(i in 1:comp_number)
   {
     volcano_gw(x, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), title)
@@ -188,7 +190,7 @@ stat_test_gw <- function(x, title) {
   
   
   # Create tables for excel--------------------------------------------------
-  data_table <- data.frame(annotate_df, data_high, data_high)
+  data_table <- data.frame(annotate_df, data_high, x)
   
   for(i in 1:group_number) 
   {

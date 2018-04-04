@@ -10,8 +10,7 @@ data_raw[is.na(data_raw)] <- 1
 # filter list, only "High", delete proteins with no ID in any sample
 total_columns <- ncol(data_raw)
 info_columns <- total_columns - sample_number
-#data_high <-data_raw[grepl("High", data_raw$Confidence, ignore.case=TRUE),] 
-data_high <- data_raw
+data_high <-data_raw[grepl("High", data_raw$Confidence, ignore.case=TRUE),] 
 
 total_row <- rowSums(data_high[(info_columns+1):total_columns])
 total_row <- data_frame(total_row)
