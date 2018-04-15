@@ -77,6 +77,8 @@ data_ready_tmm <- sweep(data_ready, 2, raw_tmm, FUN = "/") # this is data after 
 sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
 data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
 
+
+
 #-------------------------------------------
 # Plots
 #------------------------------------------
@@ -87,8 +89,6 @@ plotMDS_gw(data_ready,"Raw Data_Multidimension Scaling")
 data_ready_bar <- colSums(data_ready)
 barplot_gw(data_ready_bar, "Raw Data")
 plotDensities_gw(data_ready, "Raw data")
-PCA_gw(data_ready, "Raw Data")
-
 
 #--Total, Normalize Data---------------------------------
 boxplot_gw(data_ready_sl, "SL Normalized")
@@ -96,8 +96,6 @@ plotMDS_gw(data_ready_sl,"SL Normalized Data_Multidimension Scaling")
 data_ready_bar <- colSums(data_ready_sl)
 barplot_gw(data_ready_bar, "SL Normalized")
 plotDensities_gw(data_ready_sl, "SL Normalized")
-PCA_gw(data_ready_sl, "SL Normalized")
-
 
 #----TMM from Raw--------------------------
 boxplot_gw(data_ready_tmm, "TMM Normalized")
@@ -105,8 +103,6 @@ plotMDS_gw(data_ready_tmm,"TMM Normalized_Multidimension Scaling")
 data_ready_bar <- colSums(data_ready_tmm)
 barplot_gw(data_ready_bar, "TMM Data")
 plotDensities_gw(data_ready_tmm, "TMM Normalized")
-PCA_gw(data_ready_tmm, "TMM Normalized")
-
 
 #---TMM, SL Normalized Data-------------------------------------------
 boxplot_gw(data_ready_sl_tmm, "TMM SL Normalized")
@@ -114,15 +110,35 @@ plotMDS_gw(data_ready_sl_tmm,"TMM SL Normalized Data_Multidimension Scaling")
 data_ready_bar <- colSums(data_ready_sl_tmm)
 barplot_gw(data_ready_bar, "TMM SL Normalized")
 plotDensities_gw(data_ready_sl_tmm, "TMM SL Normalized")
-PCA_gw(data_ready_sl_tmm, "TMM SL Normalized")
-
 
 #collapse psm to peptide-----------------------------------------------
 if (psm_input){
   data_ready <- data.frame(annotate_df, data_ready)
-  data_list <- collapse_psm(data_ready)
-  data_ready <- data_list[[1]]
-  annotate_df <- data_list[[2]]
+  data_ready_sl <- data.frame(annotate_df, data_ready_sl)  
+  data_ready_sl_tmm <- data.frame(annotate_df, data_ready_sl_tmm)  
+  data_ready_tmm <- data.frame(annotate_df, data_ready_tmm)  
+  
+  data_ready <- collapse_psm(data_ready)
+  data_ready_sl <- collapse_psm(data_ready_sl)
+  data_ready_sl_tmm <- collapse_psm(data_ready_sl_tmm)
+  data_ready_tmm <- collapse_psm(data_ready_tmm)
+  
+  #data_list <- collapse_psm(data_ready)
+  #ata_ready <- data_list[[1]]
+  #annotate_df <- data_list[[2]]
+}
+
+
+if (phos_peptide_only){
+  data_peptide <- data_ready
+  data_peptide_sl <- data_ready_sl
+  data_peptide_sl_tmm <- data_ready_sl_tmm
+  data_peptide_tmm <- data_ready_tmm
+  
+  data_ready <- data_peptide[grepl("Phospho", data_peptide$Modifications, ignore.case=TRUE),]
+  data_ready_sl <- data_peptide_sl[grepl("Phospho", data_peptide_sl$Modifications, ignore.case=TRUE),]
+  data_ready_sl_tmm <- data_peptide_sl_tmm[grepl("Phospho", data_peptide_sl_tmm$Modifications, ignore.case=TRUE),]
+  data_ready_tmm <- data_peptide_tmm[grepl("Phospho", data_peptide_tmm$Modifications, ignore.case=TRUE),]
 }
 
 
@@ -130,10 +146,24 @@ if (psm_input){
 # stats
 #-----------------------------------------------------------------------------------------
 
-data_ready_final <- stat_test_gw(data_ready, "Raw Data")
-data_ready_sl_final <- stat_test_gw(data_ready_sl, "SL Normalized")
-data_ready_tmm_final <- stat_test_gw(data_ready_tmm, "TMM Normalized")
-data_ready_sl_tmm_final <- stat_test_gw(data_ready_sl_tmm, "TMM SL Normalized")
+PCA_gw(data_ready[(info_columns+1):ncol(data_ready)], "Raw Data")
+PCA_gw(data_ready_sl[(info_columns+1):ncol(data_ready_sl)], "SL Normalized")
+PCA_gw(data_ready_tmm[(info_columns+1):ncol(data_ready_tmm)], "TMM Normalized")
+PCA_gw(data_ready_sl_tmm[(info_columns+1):ncol(data_ready_sl_tmm)], "TMM SL Normalized")
+
+
+data_ready_final <- stat_test_gw(data_ready[1:info_columns], 
+                                 data_ready[(info_columns+1):ncol(data_ready)],
+                                 "Raw Data")
+data_ready_sl_final <- stat_test_gw(data_ready_sl[1:info_columns], 
+                                    data_ready_sl[(info_columns+1):ncol(data_ready_sl)],
+                                    "SL Normalized")
+data_ready_tmm_final <- stat_test_gw(data_ready_tmm[1:info_columns], 
+                                     data_ready_tmm[(info_columns+1):ncol(data_ready_sl_tmm)],
+                                     "TMM Normalized")
+data_ready_sl_tmm_final <- stat_test_gw(data_ready_sl_tmm[1:info_columns], 
+                                        data_ready_sl_tmm[(info_columns+1):ncol(data_ready_tmm)],
+                                        "TMM SL Normalized")
 
 #fix headers
 colnames(data_ready_final) <- final_sample_header

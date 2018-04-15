@@ -57,8 +57,6 @@ psm_decoy <- function(forward_data, decoy_data){
 
 #--- collapse psm to peptide-------------------------------------------------------------
 collapse_psm <- function(psm_data){
-
-  psm_data <- data_ready
   
   psm_data$longname <- paste(psm_data$`Annotated_Sequence`, psm_data$Modifications)
   psm_data$duplicate <- duplicated(psm_data$longname)
@@ -102,9 +100,10 @@ collapse_psm <- function(psm_data){
   annotate_df<-final_data[1:info_columns] # reassign due to sorting
   final_data2 <- final_data[(info_columns+1):ncol(final_data)]
   colnames(final_data2) <- sample_header[1:sample_number]
-  return_list <- list(final_data2, annotate_df)
   
-  return(return_list)
+  final_data2 <- cbind(annotate_df, final_data2)
+  
+  return(final_data2)
 }
  
 
@@ -261,11 +260,11 @@ stat_cv_gw <- function(x) {
 }
 
 #Fold change, pvalue, export volcano, return organized table for output-------------------------------------------------
-stat_test_gw <- function(x, title) {
+stat_test_gw <- function(annotate_in, data_in, title) {
   title <- title
   for(i in 1:group_number) 
   {
-    assign(group_list[i], data.frame(x[c(group_startcol[i]:group_endcol[i])]))
+    assign(group_list[i], data.frame(data_in[c(group_startcol[i]:group_endcol[i])]))
     assign(group_cv[i], percentCV_gw(get(group_list[i])))
   } 
   
@@ -299,13 +298,13 @@ stat_test_gw <- function(x, title) {
   # volcano
   for(i in 1:comp_number)
   {
-    volcano_gw(x, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), title)
+    volcano_gw(data_in, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), title)
   }
   
   
   
   # Create tables for excel--------------------------------------------------
-  data_table <- data.frame(annotate_df, data_high, x)
+  data_table <- data.frame(annotate_in, data_ready[(info_columns+1):ncol(data_ready)], data_in)
   
   for(i in 1:group_number) 
   {
