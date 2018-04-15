@@ -2,15 +2,20 @@
 # User input
 #-------------------------------------------
 
-my_data <- read_excel("d:\\Code\\Data\\4991_Protein_040418.xlsx", 1)
-file_prefix <- "4991_040418_carbox"
-sample_list <- c("37387", "37388", "37389", "37390", "37391", "37392", 
-                 "37393_01", "37393_02", "37393_03")
-group_list <- c("Syn", "Bio", "QCPool")
-group_rep <- c(3,3,3)
+forward_data <- read_excel("4982_MS3_PSM_041418.xlsx", 1)
+decoy_data <- read_excel("4982_MS3_Decoy2_PSM_041418.xlsx", 1)
+file_prefix <- "4983_041418_phos"
+psm_input <- TRUE
+psm_to_peptide <- TRUE
+phos_peptide_only <- TRUE
+peptide_to_protein <- FALSE
+sample_list <- c("36844", "36845", "36846", "36847", "36848", "36849","36850", "36851", 
+                 "36852", "36853", "36854")
+excel_order <- c(2,4,7,9,3,5,8,10,1,6,11)
+group_list <- c("DMSO", "GNF5", "QCPool")
+group_rep <- c(4,4,3)
 group_color <- c("red", "green", "blue")
-group_comp <- c(1,2)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
-
+group_comp <- c(2,1)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
 
 #-------------------------------------------------------------------------------------------------
 #Number of variables are not hardcoded, below creates lists of variables needed for processing
@@ -77,3 +82,5 @@ for(i in 1:comp_number) {
 ifelse(!dir.exists(file.path(".", "output_files")), dir.create(file.path(".", "output_files")), FALSE)
 output_dir <- ".//output_files//"
 file_prefix <- str_c(output_dir, file_prefix)
+
+
