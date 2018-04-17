@@ -8,8 +8,8 @@ if (psm_input) {
     data_raw <- forward_data 
   }  
 
-#set NA to 1
-data_raw[is.na(data_raw)] <- 1
+#set NA to 1 for protein, 0.01 for TMT
+data_raw[is.na(data_raw)] <- .01
 
 #----- edit column headers
 col_headers <- colnames(data_raw) 

@@ -6,9 +6,8 @@ order_columns <- function(data_in){
   #use setup data to reorder columns
   order_list <- seq(1:sample_number)
   order_frame <- data.frame(order_list, excel_order)
-  order_frame <- order_frame[order(order_frame$excel_order),]
-  
-  data_out <- data_in[, c(order_frame$order_list)]
+  # will rearragne based on setup sheet excel order
+  data_out <- data_in[, c(order_frame$excel_order)]
   colnames(data_out) <- sample_header[1:sample_number]
   return(data_out)
 }
