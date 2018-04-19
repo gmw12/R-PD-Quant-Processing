@@ -4,10 +4,11 @@
 # Rearrange columns if raw data is psm, PD does not organize
 order_columns <- function(data_in){
   #use setup data to reorder columns
-  order_list <- seq(1:sample_number)
-  order_frame <- data.frame(order_list, excel_order)
+  #order_list <- seq(1:sample_number)
+  #order_frame <- data.frame(order_list, excel_order)
   # will rearragne based on setup sheet excel order
-  data_out <- data_in[, c(order_frame$excel_order)]
+  #data_out <- data_in[, c(order_frame$excel_order)]
+  data_out <- data_in[, (excel_order)]
   colnames(data_out) <- sample_header[1:sample_number]
   return(data_out)
 }
@@ -303,19 +304,24 @@ stat_test_gw <- function(annotate_in, data_in, title) {
   
   
   # Create tables for excel--------------------------------------------------
-  data_table <- data.frame(annotate_in, data_ready[(info_columns+1):ncol(data_ready)], data_in)
+  data_table <- cbind(annotate_in, data_ready[(info_columns+1):ncol(data_ready)], data_in)
   
   for(i in 1:group_number) 
   {
-    data_table <- data.frame(data_table, get(group_cv[i]))
+    data_table <- cbind(data_table, get(group_cv[i]))
   }
   
   for(i in 1:comp_number) 
   {
-    data_table <- data.frame(data_table, get(comp_fc_groups[i]), get(comp_fc2_groups[i]), get(comp_pval_groups[i]))
+    data_table <- cbind(data_table, get(comp_fc_groups[i]), get(comp_fc2_groups[i]), get(comp_pval_groups[i]))
   }
 
   
   return(data_table)
 }
 
+
+filter_stats_gw <- function(data_in) {
+  
+  
+}

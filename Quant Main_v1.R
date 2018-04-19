@@ -177,6 +177,28 @@ write.csv(data.frame(data_ready_sl_final), file= str_c(file_prefix, "_sl_final.c
 write.csv(data.frame(data_ready_tmm_final), file= str_c(file_prefix, "_tmm_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_sl_tmm_final), file= str_c(file_prefix, "_sl_tmm_final.csv", collapse = " "))
 
+# csv for all peptides if filtering for phos for report
+if (phos_peptide_only){
+  write.csv(data.frame(data_peptide), file= str_c(file_prefix, "_peptide.csv", collapse = " "))
+  write.csv(data.frame(data_peptide_sl), file= str_c(file_prefix, "_sl_peptide.csv", collapse = " "))
+  write.csv(data.frame(data_peptide_tmm), file= str_c(file_prefix, "_tmm_peptide.csv", collapse = " "))
+  write.csv(data.frame(data_peptide_sl_tmm), file= str_c(file_prefix, "_sl_tmm_peptide.csv", collapse = " ")) 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #--- directly to excel for protein projects

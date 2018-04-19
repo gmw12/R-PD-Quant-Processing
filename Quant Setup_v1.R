@@ -2,9 +2,9 @@
 # User input
 #-------------------------------------------
 
-forward_data <- read_excel("4983_MS2_PSM_041418.xlsx", 1)
-decoy_data <- read_excel("4983_MS2_decoyPSM_041418.xlsx", 1)
-file_prefix <- "4983_041418_phos_ms2"
+forward_data <- read_excel("4983_MS2_PSM_041918.xlsx", 1)
+decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
+file_prefix <- "4983_041918_phos_ms2"
 psm_input <- TRUE
 psm_to_peptide <- TRUE
 phos_peptide_only <- TRUE
