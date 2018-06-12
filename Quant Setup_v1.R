@@ -2,20 +2,25 @@
 # User input
 #-------------------------------------------
 
-forward_data <- read_excel("4983_MS2_PSM_041918.xlsx", 1)
-decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
-file_prefix <- "4983_041918_phos_ms2"
-psm_input <- TRUE
-psm_to_peptide <- TRUE
-phos_peptide_only <- TRUE
+forward_data <- read_excel("4903 Protein 061118.xlsx", 1)
+#decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
+file_prefix <- "4903_061118"
+psm_input <- FALSE
+psm_to_peptide <- FALSE
+phos_peptide_only <- FALSE
 peptide_to_protein <- FALSE
-sample_list <- c("36844", "36845", "36846", "36847", "36848", "36849","36850", "36851", 
-                 "36852", "36853", "36854")
-excel_order <- c(2,4,7,9,3,5,8,10,1,6,11)
-group_list <- c("DMSO", "GNF5", "QCPool")
-group_rep <- c(4,4,3)
+#sample list in PD order if protein output, numerical order if PSM
+sample_list <- c("38592_01","38592_02","38593_03","38332","38333","38334", "38335", "38336", "38337")
+                 
+#sample numbers as outputed by PD
+excel_order <- c(1,2,3,4,5,6,7,8,9)
+# order sorted by PD
+group_list <- c("QCPool", "TTBK2", "GFP" )
+group_rep <- c(3, 3, 3)
 group_color <- c("red", "green", "blue")
-group_comp <- c(2,1)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
+group_comp <- c(1,2)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
+area_floor <- 1000
+
 
 #-------------------------------------------------------------------------------------------------
 #Number of variables are not hardcoded, below creates lists of variables needed for processing
@@ -51,7 +56,7 @@ for(i in 2:length(group_rep)) {
 color_list<- c(rep(group_color[1], each=group_rep[1]))
 for(i in 2:length(group_rep)) color_list <- c(color_list, rep(group_color[i], each=group_rep[i]))
 
-group_title<-c(group_list[i],"(", group_color[i],"),")
+group_title<-c(group_list[1],"(", group_color[1],"),")
 for(i in 2:group_number) group_title <- c(group_title, group_list[i],"(", group_color[i],"),")
 group_title <- str_c(group_title, collapse = " ")
 group_title <- gsub(" \\( ", "\\(",  group_title)
@@ -69,14 +74,18 @@ sample_header <- str_c(sample_list[1]," ", treatment_groups[1])
 for(i in 2:sample_number){
   sample_header <- c(sample_header, str_c(sample_list[i], " ", treatment_groups[i]))
 }
+
 for(i in 1:sample_number){
   sample_header <- c(sample_header, str_c(sample_list[i], " ", treatment_groups[i], " Normalized"))
 }
+
 sample_header <- c(sample_header, group_cv)
 
 for(i in 1:comp_number) {
   sample_header <- c(sample_header, comp_fc_groups[i], comp_fc2_groups[i], comp_pval_groups[i])
 }
+
+
 
 # create subdirectory to store csv and plots
 ifelse(!dir.exists(file.path(".", "output_files")), dir.create(file.path(".", "output_files")), FALSE)

@@ -9,7 +9,7 @@ if (psm_input) {
   }  
 
 #set NA to 1 for protein, 0.01 for TMT
-data_raw[is.na(data_raw)] <- .01
+data_raw[is.na(data_raw)] <- area_floor
 
 #----- edit column headers
 col_headers <- colnames(data_raw) 
@@ -55,6 +55,8 @@ rm(data_raw, forward_data, decoy_data, total_row)
 if (psm_input){
   data_ready <- order_columns(data_ready)
 }
+
+colnames(data_ready) <- sample_header[1:9]
 
 #---------------------------------------------
 # SL Normalized 
@@ -111,13 +113,18 @@ data_ready_bar <- colSums(data_ready_sl_tmm)
 barplot_gw(data_ready_bar, "TMM SL Normalized")
 plotDensities_gw(data_ready_sl_tmm, "TMM SL Normalized")
 
+#--recombine annotation and data
+data_ready <- data.frame(annotate_df, data_ready)
+data_ready_sl <- data.frame(annotate_df, data_ready_sl)  
+data_ready_sl_tmm <- data.frame(annotate_df, data_ready_sl_tmm)  
+data_ready_tmm <- data.frame(annotate_df, data_ready_tmm) 
+colnames(data_ready) <- col_headers
+colnames(data_ready_sl) <- col_headers
+colnames(data_ready_sl_tmm) <- col_headers
+colnames(data_ready_tmm) <- col_headers
+
 #collapse psm to peptide-----------------------------------------------
 if (psm_input){
-  data_ready <- data.frame(annotate_df, data_ready)
-  data_ready_sl <- data.frame(annotate_df, data_ready_sl)  
-  data_ready_sl_tmm <- data.frame(annotate_df, data_ready_sl_tmm)  
-  data_ready_tmm <- data.frame(annotate_df, data_ready_tmm)  
-  
   data_ready <- collapse_psm(data_ready)
   data_ready_sl <- collapse_psm(data_ready_sl)
   data_ready_sl_tmm <- collapse_psm(data_ready_sl_tmm)
@@ -150,6 +157,7 @@ PCA_gw(data_ready[(info_columns+1):ncol(data_ready)], "Raw Data")
 PCA_gw(data_ready_sl[(info_columns+1):ncol(data_ready_sl)], "SL Normalized")
 PCA_gw(data_ready_tmm[(info_columns+1):ncol(data_ready_tmm)], "TMM Normalized")
 PCA_gw(data_ready_sl_tmm[(info_columns+1):ncol(data_ready_sl_tmm)], "TMM SL Normalized")
+
 
 
 data_ready_final <- stat_test_gw(data_ready[1:info_columns], 
@@ -217,48 +225,21 @@ addDataFrame(data.frame(data_ready_sl_list[2]), sheet=sheet, startColumn=1, row.
 saveWorkbook(wb, "4227_TMT_MS3_MRM_032318_sl.xlsx")
 
 
-test_data <- data_ready
-test_data <- data_ready_sl
-test_data <- data_ready_tmm
-test_data <- data_ready_sl_tmm
-#--------------------------------BirA-----O66837-------------------------------
-bira_list <- c("O66837")
-bira_test_raw <-subset(test_data, rownames(test_data) %in% bira_list)
-bira_raw_bar <- colSums(bira_test_raw)
-barplot(bira_raw_bar, 
-        col = color_list,
-        main = "Bira")
-#--------------------------------Carboxylase-----Q05920, Q91ZA3-------------------------------
-carbox_list <- c("Q05920", "Q91ZA3")
-carbox_test_raw <-subset(test_data, rownames(test_data) %in% carbox_list)
-carbox_raw_bar <- colSums(carbox_test_raw)
-barplot(carbox_raw_bar, 
-        col = color_list,
-        main = "Carbox")
 
-#--------------------------------Avidin------------------------------------
-avidin_list <- c("P02701")
-avidin_test_raw <-subset(test_data, rownames(test_data) %in% avidin_list)
-avidin_raw_bar <- colSums(avidin_test_raw)
-barplot(avidin_raw_bar, 
-        col = color_list,
-        main = "Avidin")
 
-#--------------------------------Bait-------------------------------
-bait_list <- c("Q8JZP2")
-bait_test_raw <-subset(test_data, rownames(test_data) %in% bait_list)
-bait_raw_bar <- colSums(bait_test_raw)
-barplot(bait_raw_bar, 
-        col = color_list,
-        main = "Bait")
 
-#--------------------------------ADH-------------------------------
-adh_list <- c("P00330")
-adh_test_raw <-subset(test_data, rownames(test_data) %in% adh_list)
-adh_raw_bar <- colSums(adh_test_raw)
-barplot(adh_raw_bar, 
-        col = color_list,
-        main = "ADH")
+
+
+BioID_normalize_gw(data_ready, "Raw")
+BioID_normalize_gw(data_ready_sl, "SL")
+BioID_normalize_gw(data_ready_tmm, "TMM")
+BioID_normalize_gw(data_ready_sl_tmm, "SL TMM")
+
+
+
+
+
+
 
 
 
