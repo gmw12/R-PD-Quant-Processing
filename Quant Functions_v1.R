@@ -222,6 +222,7 @@ PCA_gw <- function(x,y) {
     png(filename=paste(output_dir, y, "_PCA2D.png"), width = 888, height = 571)    
       pca2d(x_pca, 
             group=x_gr, 
+            radius = 2,
             legend="topleft")
     dev.off()
     
@@ -340,7 +341,6 @@ filter_stats_gw <- function(data_in) {
 BioID_normalize_gw <- function(test_data, title) {
 
   #--------------------------------BirA-----O66837-------------------------------
-  bira_list <- c("O66837", "P06709")
   bira_test_raw <-subset(test_data, test_data$Accession %in% bira_list)
   bira_test_raw <- bira_test_raw[(info_columns+1):ncol(data_ready)]
   bira_raw_bar <- colSums(bira_test_raw)
@@ -348,23 +348,18 @@ BioID_normalize_gw <- function(test_data, title) {
 
   
   #--------------------------------Carboxylase-----Q05920, Q91ZA3-------------------------------
-  #carbox_list <- c("Q05920", "Q91ZA3")
-  carbox_list <- c("P11498", "Q13085", "P05165")
   carbox_test_raw <-subset(test_data, test_data$Accession %in% carbox_list)
   carbox_test_raw <- carbox_test_raw[(info_columns+1):ncol(data_ready)]
   carbox_raw_bar <- colSums(carbox_test_raw)
-  barplot_gw(carbox_raw_bar, paste("Carbox", title))
+  barplot_gw(carbox_raw_bar, paste("Carbox ", title))
   
   #--------------------------------Avidin------------------------------------
-  avidin_list <- c("P02701", "P22629")
   avidin_test_raw <-subset(test_data, test_data$Accession %in% avidin_list)
   avidin_test_raw <- avidin_test_raw[(info_columns+1):ncol(data_ready)]
   avidin_raw_bar <- colSums(avidin_test_raw)
   barplot_gw(avidin_raw_bar, paste("Avidin", title))
 
-  
   #--------------------------------Bait-------------------------------
-  bait_list <- c("Q6IQ55")
   bait_test_raw <-subset(test_data, test_data$Accession %in% bait_list)
   bait_test_raw <- bait_test_raw[(info_columns+1):ncol(data_ready)]
   bait_raw_bar <- colSums(bait_test_raw)
@@ -372,7 +367,6 @@ BioID_normalize_gw <- function(test_data, title) {
 
   
   #--------------------------------ADH-------------------------------
-  adh_list <- c("P00330")
   adh_test_raw <-subset(test_data, test_data$Accession %in% adh_list)
   adh_test_raw <- adh_test_raw[(info_columns+1):ncol(data_ready)]
   adh_raw_bar <- colSums(adh_test_raw)

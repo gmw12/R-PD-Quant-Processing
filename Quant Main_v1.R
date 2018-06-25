@@ -56,7 +56,7 @@ if (psm_input){
   data_ready <- order_columns(data_ready)
 }
 
-colnames(data_ready) <- sample_header[1:9]
+colnames(data_ready) <- sample_header[1:sample_number]
 
 #---------------------------------------------
 # SL Normalized 
@@ -79,7 +79,16 @@ data_ready_tmm <- sweep(data_ready, 2, raw_tmm, FUN = "/") # this is data after 
 sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
 data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
 
-
+#---------------------------------------------
+# Carbox Normalized Data
+#--------------------------------------------
+# global scaling value, sample loading normalization
+#carbox_list <- c("Q05920", "Q91ZA3")
+carbox_list <- c("P11498", "P05166", "Q96RQ3", "Q13085")
+carbox_raw <-subset(data_ready, rownames(data_ready) %in% carbox_list)
+target <- mean(colSums((carbox_raw)))
+norm_facs <- target / colSums(carbox_raw)
+data_ready_carbox <- sweep(data_ready, 2, norm_facs, FUN = "*")
 
 #-------------------------------------------
 # Plots
@@ -113,15 +122,25 @@ data_ready_bar <- colSums(data_ready_sl_tmm)
 barplot_gw(data_ready_bar, "TMM SL Normalized")
 plotDensities_gw(data_ready_sl_tmm, "TMM SL Normalized")
 
+#--Carbox, Normalized Data---------------------------------
+boxplot_gw(data_ready_carbox, "Carbox, Normalized")
+plotMDS_gw(data_ready_carbox,"Carbox, Normalized Data_Multidimension Scaling")
+data_ready_bar <- colSums(data_ready_carbox)
+barplot_gw(data_ready_bar, "Carbox, Normalized")
+plotDensities_gw(data_ready_carbox, "Carbox, Normalized")
+
+
 #--recombine annotation and data
 data_ready <- data.frame(annotate_df, data_ready)
 data_ready_sl <- data.frame(annotate_df, data_ready_sl)  
 data_ready_sl_tmm <- data.frame(annotate_df, data_ready_sl_tmm)  
 data_ready_tmm <- data.frame(annotate_df, data_ready_tmm) 
+data_ready_carbox <- data.frame(annotate_df, data_ready_carbox) 
 colnames(data_ready) <- col_headers
 colnames(data_ready_sl) <- col_headers
 colnames(data_ready_sl_tmm) <- col_headers
 colnames(data_ready_tmm) <- col_headers
+colnames(data_ready_carbox) <- col_headers
 
 #collapse psm to peptide-----------------------------------------------
 if (psm_input){
@@ -157,7 +176,7 @@ PCA_gw(data_ready[(info_columns+1):ncol(data_ready)], "Raw Data")
 PCA_gw(data_ready_sl[(info_columns+1):ncol(data_ready_sl)], "SL Normalized")
 PCA_gw(data_ready_tmm[(info_columns+1):ncol(data_ready_tmm)], "TMM Normalized")
 PCA_gw(data_ready_sl_tmm[(info_columns+1):ncol(data_ready_sl_tmm)], "TMM SL Normalized")
-
+PCA_gw(data_ready_carbox[(info_columns+1):ncol(data_ready_carbox)], "Carbox Normalized")
 
 
 data_ready_final <- stat_test_gw(data_ready[1:info_columns], 
@@ -167,23 +186,29 @@ data_ready_sl_final <- stat_test_gw(data_ready_sl[1:info_columns],
                                     data_ready_sl[(info_columns+1):ncol(data_ready_sl)],
                                     "SL Normalized")
 data_ready_tmm_final <- stat_test_gw(data_ready_tmm[1:info_columns], 
-                                     data_ready_tmm[(info_columns+1):ncol(data_ready_sl_tmm)],
+                                     data_ready_tmm[(info_columns+1):ncol(data_ready_tmm)],
                                      "TMM Normalized")
 data_ready_sl_tmm_final <- stat_test_gw(data_ready_sl_tmm[1:info_columns], 
-                                        data_ready_sl_tmm[(info_columns+1):ncol(data_ready_tmm)],
+                                        data_ready_sl_tmm[(info_columns+1):ncol(data_ready_sl_tmm)],
                                         "TMM SL Normalized")
+data_ready_carbox_final <- stat_test_gw(data_ready_carbox[1:info_columns], 
+                                     data_ready_carbox[(info_columns+1):ncol(data_ready_carbox)],
+                                     "Carbox Normalized")
+
 
 #fix headers
 colnames(data_ready_final) <- final_sample_header
 colnames(data_ready_sl_final) <- final_sample_header
 colnames(data_ready_tmm_final) <- final_sample_header
 colnames(data_ready_sl_tmm_final) <- final_sample_header
+colnames(data_ready_carbox_final) <- final_sample_header
 
 #--csv for large peptide output
 write.csv(data.frame(data_ready_final), file= str_c(file_prefix, "_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_sl_final), file= str_c(file_prefix, "_sl_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_tmm_final), file= str_c(file_prefix, "_tmm_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_sl_tmm_final), file= str_c(file_prefix, "_sl_tmm_final.csv", collapse = " "))
+write.csv(data.frame(data_ready_carbox_final), file= str_c(file_prefix, "_carbox_final.csv", collapse = " "))
 
 # csv for all peptides if filtering for phos for report
 if (phos_peptide_only){
@@ -192,6 +217,16 @@ if (phos_peptide_only){
   write.csv(data.frame(data_peptide_tmm), file= str_c(file_prefix, "_tmm_peptide.csv", collapse = " "))
   write.csv(data.frame(data_peptide_sl_tmm), file= str_c(file_prefix, "_sl_tmm_peptide.csv", collapse = " ")) 
 }
+
+BioID_normalize_gw(data_ready, "Raw")
+BioID_normalize_gw(data_ready_sl, "SL")
+BioID_normalize_gw(data_ready_tmm, "TMM")
+BioID_normalize_gw(data_ready_sl_tmm, "SL TMM")
+BioID_normalize_gw(data_ready_carbox, "Carbox")
+
+
+
+
 
 
 
@@ -223,49 +258,3 @@ addDataFrame(data.frame(data_ready_sl_list[1]), sheet=sheet, startColumn=1, row.
 sheet = createSheet(wb, "Sheet 2")
 addDataFrame(data.frame(data_ready_sl_list[2]), sheet=sheet, startColumn=1, row.names=FALSE)
 saveWorkbook(wb, "4227_TMT_MS3_MRM_032318_sl.xlsx")
-
-
-
-
-
-
-
-BioID_normalize_gw(data_ready, "Raw")
-BioID_normalize_gw(data_ready_sl, "SL")
-BioID_normalize_gw(data_ready_tmm, "TMM")
-BioID_normalize_gw(data_ready_sl_tmm, "SL TMM")
-
-
-
-
-
-
-
-
-
-#---------------------------------------------
-# Carbox Normalized Data
-#--------------------------------------------
-# global scaling value, sample loading normalization
-carbox_list <- c("Q05920", "Q91ZA3")
-carbox_raw <-subset(data_ready, rownames(test_data) %in% carbox_list)
-target <- mean(colSums((carbox_raw)))
-norm_facs <- target / colSums(carbox_raw)
-data_ready_carbox <- sweep(data_ready, 2, norm_facs, FUN = "*")
-
-#--Carbox, Normalized Data---------------------------------
-boxplot_gw(data_ready_carbox, "Carbox, Normalized")
-plotMDS_gw(data_ready_carbox,"Carbox, Normalized Data_Multidimension Scaling")
-data_ready_bar <- colSums(data_ready_carbox)
-barplot_gw(data_ready_bar, "Carbox, Normalized")
-plotDensities_gw(data_ready_carbox, "Carbox, Normalized")
-PCA_gw(data_ready_carbox, "Carbox, Normalized")
-
-data_ready_carbox_final <- stat_test_gw(data_ready_carbox, "Carbox Normalized")
-
-#fix headers
-colnames(data_ready_carbox_final) <- final_sample_header
-
-#--csv for large peptide output
-write.csv(data.frame(data_ready_carbox_final), file= str_c(file_prefix, "_final.csv", collapse = " "))
-

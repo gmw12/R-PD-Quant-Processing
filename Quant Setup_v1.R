@@ -2,23 +2,25 @@
 # User input
 #-------------------------------------------
 
-forward_data <- read_excel("4903 Protein 061118.xlsx", 1)
+forward_data <- read_excel("4903_HighMaster_061918.xlsx", 1)
 #decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
-file_prefix <- "4903_061118"
+file_prefix <- "4903_061918"
 psm_input <- FALSE
 psm_to_peptide <- FALSE
 phos_peptide_only <- FALSE
 peptide_to_protein <- FALSE
 #sample list in PD order if protein output, numerical order if PSM
-sample_list <- c("38592_01","38592_02","38593_03","38332","38333","38334", "38335", "38336", "38337")
+sample_list <- c("38592_01", "38592_02",
+                 "38335","38336","38337",
+                 "38332", "38333","38334")
                  
 #sample numbers as outputed by PD
-excel_order <- c(1,2,3,4,5,6,7,8,9)
+excel_order <- c(1,2,3,4,5,6,7,8)
 # order sorted by PD
-group_list <- c("QCPool", "TTBK2", "GFP" )
-group_rep <- c(3, 3, 3)
-group_color <- c("red", "green", "blue")
-group_comp <- c(1,2)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
+group_list <- c("QCPool", "GFP", "TTBK2")
+group_rep <- c(2, 3,3)
+group_color <- c("blue", "red", "green")
+group_comp <- c(3,2)  # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
 area_floor <- 1000
 
 
