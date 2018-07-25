@@ -252,14 +252,14 @@ PCA_gw <- function(x,y) {
 
 
 #Volcano-------------------------------------------------
-volcano_gw <- function(x,y,z,title)
+volcano_gw <- function(x,y,z,title,plottitle)
 {
   file_name <- str_c(output_dir, title, "_volcano.png")
   ggplot(x, aes(log2(y), -log10(z))  ) +
     geom_point(alpha=0.4, size=2, aes(color = z)) +
     xlab("log2 fold change") + ylab("-log10 p-value") +
     scale_colour_gradient(low = "blue", high = "black") +
-    ggtitle(title)+
+    ggtitle(plottitle)+
     theme(plot.title = element_text(hjust = 0.5),
           legend.position = "none")  
   #legend.text=element_text(size=10, vjust=-1), 
@@ -312,7 +312,8 @@ stat_test_gw <- function(annotate_in, data_in, title) {
   for(i in 1:comp_number)
   {
     newtitle <- str_c(title,"_", i)
-    volcano_gw(data_in, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), newtitle)
+    plottitle <- str_c(title,"_", comp_groups[i])
+    volcano_gw(data_in, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), newtitle, plottitle)
   }
   
   

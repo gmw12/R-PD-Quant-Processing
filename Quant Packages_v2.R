@@ -42,9 +42,9 @@ library(openxlsx)
 library(sjstats)
 library(writexl)
 
-
-
-
+install.packages("devtools")
+library(devtools)
+install_github("easyGgplot2", "kassambara")
 
 
 library(effsize)

@@ -214,15 +214,38 @@ dev.off()
 
 
 
-
-
-
 # final excel tables with tabs for each comparison, subset by pval, fc
 Final_Excel_gw(data_ready_final, "_raw_final.xlsx")
 Final_Excel_gw(data_ready_sl_final, "_sl_final.xlsx")
 Final_Excel_gw(data_ready_tmm_final, "_tmm_final.xlsx")
 Final_Excel_gw(data_ready_sl_tmm_final, "_sl_tmm_final.xlsx")
 if (normalize_to_protein == TRUE) {Final_Excel_gw(data_ready_protein_norm_final, "_specific_protein_final.xlsx")}
+
+
+
+
+
+
+
+
+
+
+
+
+
+test_numbersamples <- (1:sample_number)
+test_treatmentgroups <- rep(test_numbersamples,2)
+testraw <- unname(norm_facs)
+testtmm <- raw_tmm
+values <- c(testraw, testtmm)
+type <- c(rep("Raw", sample_number), rep("TMM",sample_number))
+mydata <- c(testraw,testtmm)
+mydata <- data.frame(test_treatmentgroups,mydata)
+
+p <-ggplot(mydata, aes(test_treatmentgroups, values))
+p +geom_bar(stat = "identity", aes(fill = type), position = "dodge")
+
+
 
 
 

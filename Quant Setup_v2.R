@@ -74,9 +74,11 @@ for(i in 1:comp_number) {
   fc1 <- str_c(group_list[group_comp[z]],"_",group_list[group_comp[z+1]],"_FC", collapse = " ")
   fc2 <- str_c(group_list[group_comp[z]],"_",group_list[group_comp[z+1]],"_FC2", collapse = " ")
   pval1 <- str_c(group_list[group_comp[z]],"_",group_list[group_comp[z+1]],"_pval", collapse = " ")
+  comp <- str_c(group_list[group_comp[z]],"_",group_list[group_comp[z+1]], collapse = " ")
   comp_fc_groups <- c(comp_fc_groups, fc1 )
   comp_fc2_groups <- c(comp_fc2_groups, fc2)
   comp_pval_groups <- c(comp_pval_groups, pval1)
+  comp_groups <- c(comp_groups, comp)
   comp_header <- c(comp_header, fc1, fc2, pval1)
   z <- z+2
 }
