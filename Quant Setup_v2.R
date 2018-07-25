@@ -68,6 +68,7 @@ sample_groups$title <- str_c(sample_groups$Group,"(",sample_groups$colorlist,")"
 comp_fc_groups <- NULL
 comp_fc2_groups <- NULL
 comp_pval_groups <- NULL
+comp_groups <- NULL
 comp_header <- NULL
 z <- 1
 for(i in 1:comp_number) {
