@@ -6,27 +6,27 @@ psm_input <- FALSE
 psm_to_peptide <- FALSE
 phos_peptide_only <- FALSE
 peptide_to_protein <- FALSE
-normalize_to_protein <- FALSE
-area_floor <- 1
+normalize_to_protein <- TRUE
+area_floor <- 1000
 pvalue_cutoff <- 0.05
-fc_cutoff <- 1.5
+fc_cutoff <- 2
 color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
-file_prefix <- "4227_Ube3a_Striatum_070918"
+file_prefix <- "5026_072518"
 # excel export from PD
-forward_data <- read_excel("4227 Protein Ube3a Striatum 070418.xlsx", 1)
+forward_data <- read_excel("5026_Protein_072518.xlsx", 1)
 # excel export from PD for decoy data
-#decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
-#excel file contains 3 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Group
-sample_info <- read_excel("4227_Ube3a Striatum Sample Info.xlsx", 1)
+# decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
+# excel file contains 3 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Group
+sample_info <- read_excel("5026_SampleList_072518.xlsx", 1)
 
 # Protein accession numbers for plots and can normalize by 
 adh_list <- c("P00330")
-bait_list <- c("O08759")
-avidin_list <- c("P22629")
-carbox_list <- c("P11498", "P05166", "Q96RQ3", "Q13085")
-protein_norm_list <- c("P11498", "P05166", "Q96RQ3", "Q13085") #use these if normalize_to_protein <- TRUE
-#carbox_list <- c("Q05920", "Q91ZA3")
-bira_list <- c("P06709")
+bait_list <- c("Q8JZL2","P30935")
+avidin_list <- c("P02701")
+carbox_list <- c("Q05920", "Q91ZA3", "Q5SWU9")
+protein_norm_list <- c("Q05920", "Q91ZA3", "Q5SWU9") #use these if normalize_to_protein <- TRUE
+# carbox_list <- c("Q05920", "Q91ZA3")
+bira_list <- c("O66837")
 
 
 

@@ -311,7 +311,8 @@ stat_test_gw <- function(annotate_in, data_in, title) {
   # volcano
   for(i in 1:comp_number)
   {
-    volcano_gw(data_in, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), title)
+    newtitle <- str_c(title,"_", i)
+    volcano_gw(data_in, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), newtitle)
   }
   
   
