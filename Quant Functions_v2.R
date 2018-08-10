@@ -107,19 +107,16 @@ collapse_psm <- function(psm_data){
 }
  
 
-
-
-
-
-
-
-
 #t.test ---------------------------------
 ttest_gw <- function(x,y) {
+  if (!PairComp){
   ttest_pvalue = try(t.test(x,y, 
                             alternative="two.sided",
                             var.equal = FALSE,
                             paired = FALSE), silent=TRUE)
+  }else{
+    ttest_pvalue = t.test(x,y, paired = TRUE)
+  }
   if (is(ttest_pvalue, "try-error")) return(NA) else return(signif((ttest_pvalue$p.value), digits = 3))
 }
 
@@ -130,20 +127,65 @@ cohend_gw <- function(x,y) {
   if (is(cohend_est, "try-error")) return(NA) else return(signif((cohend_est$estimate), digits = 3))
 }
 
+
 #fold change ---------------------------------
 foldchange_gw <- function(x,y) {
-  ave_x = rowMeans(x)
-  ave_y = rowMeans(y)
-  test = ave_x/ave_y
+  if(!PairComp){
+    ave_x = rowMeans(x)
+    ave_y = rowMeans(y)
+    test = ave_x/ave_y
+}else{
+  sn <- ncol(x)
+  indiv_fc <- x
+  for (i in 1:sn){
+    indiv_fc[i] <- (x[i]/y[i])
+  }
+  test <- rowMeans(indiv_fc)
+}
+   fc <- ifelse ((test >= 1), test, -1/test)
+  return(signif(fc, digits = 3))
+}
+
+#fold change pair---------------------------------
+foldchange_pair_gw <- function(x,y) {
+  sn <- ncol(x)
+  indiv_fc <- x
+  for (i in 1:sn){
+    indiv_fc[i] <- (x[i]/y[i])
+  }
+  test <- rowMeans(indiv_fc)
   fc <- ifelse ((test >= 1), test, -1/test)
   return(signif(fc, digits = 3))
 }
 
+
+
 #fold change decimal ---------------------------------
 foldchange_decimal_gw <- function(x,y) {
+  if(!PairComp){
   ave_x = rowMeans(x)
-  ave_y = rowMeans(y)
-  test = ave_x/ave_y
+    ave_y = rowMeans(y)
+    test = ave_x/ave_y
+  }else{
+    sn <- ncol(x)
+    indiv_fc <- x
+    for (i in 1:sn){
+      indiv_fc[i] <- (x[i]/y[i])
+    }
+    test <- rowMeans(indiv_fc) 
+  }
+  fc <- test
+  return(signif(fc, digits = 3))
+}
+
+#fold change pair decimal---------------------------------
+foldchange_pair_decimal_gw <- function(x,y) {
+  sn <- ncol(x)
+  indiv_fc <- x
+  for (i in 1:sn){
+    indiv_fc[i] <- (x[i]/y[i])
+  }
+  test <- rowMeans(indiv_fc)
   fc <- test
   return(signif(fc, digits = 3))
 }
@@ -302,7 +344,7 @@ stat_test_gw <- function(annotate_in, data_in, title) {
     temp_comp2 <- get(group_log[group_comp[z+1]])
     for(y in 1:pval_rows) 
     {
-      temp_pval[y] <- ttest_gw(temp_comp1[y,], temp_comp2[y,])    
+      temp_pval[y] <- ttest_gw(as.numeric(temp_comp1[y,]), as.numeric(temp_comp2[y,]) )   
     }
     assign(comp_pval_groups[i], temp_pval)
     z <- z +2

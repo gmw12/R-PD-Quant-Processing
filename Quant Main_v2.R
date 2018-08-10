@@ -1,6 +1,7 @@
 #global options, numbers, sig digits
 options(scipen = 999)
 options(digits=3)
+warnings()
 
 #import data from csv file
 if (psm_input) {
@@ -220,13 +221,6 @@ Final_Excel_gw(data_ready_sl_final, "_sl_final.xlsx")
 Final_Excel_gw(data_ready_tmm_final, "_tmm_final.xlsx")
 Final_Excel_gw(data_ready_sl_tmm_final, "_sl_tmm_final.xlsx")
 if (normalize_to_protein == TRUE) {Final_Excel_gw(data_ready_protein_norm_final, "_specific_protein_final.xlsx")}
-
-
-
-
-
-
-
 
 
 

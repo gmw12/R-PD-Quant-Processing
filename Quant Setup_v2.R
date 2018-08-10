@@ -10,23 +10,24 @@ normalize_to_protein <- TRUE
 area_floor <- 1000
 pvalue_cutoff <- 0.05
 fc_cutoff <- 2
+PairComp <- TRUE
 color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
-file_prefix <- "5026_072518"
+file_prefix <- "4844_080918"
 # excel export from PD
-forward_data <- read_excel("5026_Protein_072518.xlsx", 1)
+forward_data <- read_excel("4844_Protein3_080718.xlsx", 1)
 # excel export from PD for decoy data
 # decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
 # excel file contains 3 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Group
-sample_info <- read_excel("5026_SampleList_072518.xlsx", 1)
+sample_info <- read_excel("4844_SampleList_080718.xlsx", 1)
 
 # Protein accession numbers for plots and can normalize by 
 adh_list <- c("P00330")
-bait_list <- c("Q8JZL2","P30935")
+bait_list <- c("Q3UMB9")
 avidin_list <- c("P02701")
 carbox_list <- c("Q05920", "Q91ZA3", "Q5SWU9")
 protein_norm_list <- c("Q05920", "Q91ZA3", "Q5SWU9") #use these if normalize_to_protein <- TRUE
 # carbox_list <- c("Q05920", "Q91ZA3")
-bira_list <- c("O66837")
+bira_list <- c("P06709")
 
 
 
