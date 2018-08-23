@@ -18,7 +18,7 @@ forward_data <- read_excel("4844_Protein3_080718.xlsx", 1)
 # excel export from PD for decoy data
 # decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
 # excel file contains 3 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Group
-sample_info <- read_excel("4844_SampleList_080718.xlsx", 1)
+sample_info <- read_excel("4844_SampleList_082318.xlsx", 1)
 
 # Protein accession numbers for plots and can normalize by 
 adh_list <- c("P00330")
@@ -38,13 +38,13 @@ bira_list <- c("P06709")
 
 sample_columns <- ncol(sample_info)
 sample_number <- nrow(sample_info)
-comp_number <- sample_columns - 3 #subtract 3 non comparison columns
+comp_number <- sample_columns - 4 #subtract 3 non comparison columns
 
 #count number of samples in each group - add column
 sample_info$Count <- sapply(sample_info$Group, function(string) sum(string==sample_info$Group))
 
 # create unqiue group dataframe with sample number
-sample_groups <- sample_info[3:(sample_columns+1)]
+sample_groups <- sample_info[4:(sample_columns+1)]
 sample_groups <- sample_groups %>% distinct(Group, .keep_all = TRUE)
 
 # comparison groups in pairs, c(3,2) 3/2, c(3,2,4,2) 3/2, 4/2
@@ -118,6 +118,8 @@ sample_header <- c(sample_header, group_cv, comp_header)
 
 
 # create subdirectory to store csv and plots
+if(dir.exists(file.path(".", "output_files"))) { unlink(file.path(".", "output_files"), recursive = TRUE, force=TRUE)}
+   
 ifelse(!dir.exists(file.path(".", "output_files")), dir.create(file.path(".", "output_files")), FALSE)
 output_dir <- ".//output_files//"
 file_prefix <- str_c(output_dir, file_prefix)
