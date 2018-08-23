@@ -240,6 +240,9 @@ barplot_gw <- function(x,y) {
   png(filename=str_c(output_dir, y, "_barplot.png"), width = 888, height = 571)  
   barplot(x, 
           col = color_list,
+          names.arg = treatment_groups,
+          cex.names = .8,
+          las=2,
           main = y)
   dev.off()
 }
