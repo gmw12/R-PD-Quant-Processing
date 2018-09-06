@@ -2,7 +2,30 @@
 options(scipen = 999)
 options(digits=3)
 
+#format data from nested protein/peptide output to peptide only
+forward_data$`Protein FDR Confidence: Combined`[is.na(forward_data$`Protein FDR Confidence: Combined`)] <- ""  
+for(i in 1:nrow(forward_data)) {
+  if(forward_data[i,1] == "High") {set_accession <- forward_data[i,3]
+  }else{forward_data[i,3] <- set_accession}
+}
+
+protein_names <- forward_data
+colnames(protein_names)[1] <- "filter"
+protein_names <- subset(protein_names, filter=="High")
+protein_names <- protein_names[ , c(3:4)]
+peptide_header <- forward_data[2,]
+forward_data <- subset(forward_data, Master=="High")
+colnames(forward_data) <- peptide_header
+forward_data <- forward_data[,-1]
+colnames(forward_data)[colnames(forward_data) == 'Quan Usage'] <- 'Used'
+forward_data <- subset(forward_data, Used=="Used")
+forward_data <- forward_data[-ncol(forward_data)]
+forward_data[(ncol(forward_data)-sample_number+1):ncol(forward_data)] <- as.numeric(unlist(forward_data[(ncol(forward_data)-sample_number+1):ncol(forward_data)]))
+colnames(forward_data)[2] <- "Master Protein Accessions"
+
 #import data from csv file
+
+
 if (psm_input) {
   data_raw <- psm_decoy(forward_data, decoy_data)
   }else{
@@ -10,8 +33,8 @@ if (psm_input) {
   }  
 
 #replaces NA, no data, with assigned value
-if (holes == "Floor") {data_raw[is.na(data_raw)] <- area_floor
-  }else{data_raw[is.na(data_raw)] <- 0}
+#if (holes == "Floor") {data_raw[is.na(data_raw)] <- area_floor
+#  }else{data_raw[is.na(data_raw)] <- 0}
 
 
 #----- edit column headers
@@ -19,6 +42,7 @@ col_headers <- colnames(data_raw)
 col_headers <- str_replace(col_headers, "Protein FDR Confidence: Mascot", "Confidence")
 col_headers <- str_replace(col_headers, "Protein FDR Confidence: Combined", "Confidence")
 col_headers <- str_replace(col_headers, "Annotated Sequence", "Annotated_Sequence")
+#col_headers <- str_replace(col_headers, "Master Protein Accessions", "Accessions")
 col_headers <- str_replace(col_headers," \\(by Search Engine\\): Mascot", "")
 col_headers <- str_replace(col_headers,"\\[", "")
 col_headers <- str_replace(col_headers,"\\]", "")
@@ -30,26 +54,32 @@ final_sample_header <- c(info_headers, sample_header)
 
 
 # filter list, only "High", delete proteins with no ID in any sample, only if PSM is false
-if (!psm_input){
-  data_ready <-data_raw[grepl("High", data_raw$Confidence, ignore.case=TRUE),] 
-}else{
-  data_ready <- data_raw
-}
+#if (!psm_input){
+#  data_ready <-data_raw[grepl("High", data_raw$Confidence, ignore.case=TRUE),] 
+#}else{
+#  data_ready <- data_raw
+#}
+
+data_ready <- data_raw
+data_ready[is.na(data_ready)] <- 0.0  
 
 # create column to sum abundances, flag and delete rows with no data
 total_row <- rowSums(data_ready[(info_columns+1):total_columns])
 total_row <- data_frame(total_row)
 data_ready <- cbind(data_ready, total_row)
-if (holes == "Floor") {data_ready <- subset(data_ready, total_row > (sample_number*area_floor)) 
-  }else{data_ready <- subset(data_ready, total_row > 0)}
+data_ready <- subset(data_ready, total_row > 0)
 data_ready <- data_ready[1:total_columns]
+
+data_holes <- data_ready
+data_holes[data_holes >0] =1
+
 
 # save the annotation columns for later and remove from data frame
 annotate_df <- data_ready[1:info_columns]
 data_ready <- data_ready[(info_columns+1):total_columns]
 row.names(data_ready) <- annotate_df$`Accession`
 
-#remove unused data 
+#remove unused data frames
 try(rm(data_raw, forward_data, decoy_data, total_row), silent = TRUE)
 
 #arrange columns if psm data
@@ -59,28 +89,35 @@ if (psm_input){
 
 colnames(data_ready) <- sample_header[1:sample_number]
 
+normal_data_ready <- data_ready
 
-# fix holes
-if (holes == "Average") {data_ready <- hole_average(data_ready)}
-if (holes == "Minimum") {data_ready <- hole_minimum(data_ready)}
+data_ready <- log(data_ready,2)
+data_ready[data_ready==-Inf] = 0
+
+#normalize on data with no missing values, create new data frame
+data_ready$holes <- rowSums(data_ready == 0.0)
+data_normalize <- subset(data_ready, holes==0)
+data_normalize <- data_normalize[1:sample_number]
+data_ready <- data_ready[1:sample_number]
+
 
 
 #---------------------------------------------
 # SL Normalized 
 #--------------------------------------------
 # global scaling value, sample loading normalization
-target <- mean(colSums(data_ready))
-norm_facs <- target / colSums(data_ready)
+target <- mean(colSums(data_normalize))
+norm_facs <- target / colSums(data_normalize)
 data_ready_sl <- sweep(data_ready, 2, norm_facs, FUN = "*")
 
 #---------------------------------------------
 # TMM Normalized 
 #--------------------------------------------
-raw_tmm <- calcNormFactors(data_ready, method = "TMM", sumTrim = 0.1)
+raw_tmm <- calcNormFactors(data_normalize, method = "TMM", sumTrim = 0.1)
 data_ready_tmm <- sweep(data_ready, 2, raw_tmm, FUN = "/") # this is data after SL and TMM on original scale
 
 #---------------------------------------------
-# TMM & SL Normalized
+# TMM & SL Normalized, step moved to after imputation of TMM
 #--------------------------------------------
 # see exactly what TMM does with SL data
 sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
@@ -97,11 +134,33 @@ if (normalize_to_protein == TRUE) {
   data_ready_protein_norm <- sweep(data_ready, 2, norm_facs, FUN = "*")
 }
 
+
+#----------------------------------
+# fill missing data, "unlog"
+#----------------------------------------
+
+data_ready_fill <- hole_fill(data_ready)
+data_ready_sl <- hole_fill(data_ready_sl)
+data_ready_tmm <- hole_fill(data_ready_tmm)
+data_ready_sl_tmm <- hole_fill(data_ready_sl_tmm)
+
+sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
+data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
+
+
+data_ready <- data.frame(2^(data_ready))
+data_ready_fill <- data.frame(2^(data_ready_fill))
+data_ready_sl <- data.frame(2^(data_ready_sl))
+data_ready_tmm <- data.frame(2^(data_ready_tmm))
+data_ready_sl_tmm <- data.frame(2^(data_ready_sl_tmm))
+
+data_ready[data_ready ==1 ] <- 0
 #-------------------------------------------
 # Plots, boxplot, MDS, density, barplot
 #------------------------------------------
 
 Plot_All_gw(data_ready, "Raw Data")
+Plot_All_gw(data_ready_fill, "Raw Fill Missing")
 Plot_All_gw(data_ready_sl, "SL Normalized")
 Plot_All_gw(data_ready_tmm, "TMM Normalized")
 Plot_All_gw(data_ready_sl_tmm, "SL TMM Normalized")
@@ -110,10 +169,12 @@ if (normalize_to_protein == TRUE) {Plot_All_gw(data_ready, "Protein Normalized")
 
 #--recombine annotation and data
 data_ready <- data.frame(annotate_df, data_ready)
+data_ready_fill <- data.frame(annotate_df, data_ready_fill)
 data_ready_sl <- data.frame(annotate_df, data_ready_sl)  
 data_ready_sl_tmm <- data.frame(annotate_df, data_ready_sl_tmm)  
 data_ready_tmm <- data.frame(annotate_df, data_ready_tmm) 
 colnames(data_ready) <- col_headers
+colnames(data_ready_fill) <- col_headers
 colnames(data_ready_sl) <- col_headers
 colnames(data_ready_sl_tmm) <- col_headers
 colnames(data_ready_tmm) <- col_headers
@@ -121,9 +182,13 @@ if (normalize_to_protein == TRUE) {
   data_ready_protein_norm <- data.frame(annotate_df, data_ready_protein_norm)   
   colnames(data_ready_protein_norm) <- col_headers}
 
+
+
+
 #collapse psm to peptide-----------------------------------------------
 if (psm_input){
   data_ready <- collapse_psm(data_ready)
+  data_ready_fill <- collapse_psm(data_ready_fill)
   data_ready_sl <- collapse_psm(data_ready_sl)
   data_ready_sl_tmm <- collapse_psm(data_ready_sl_tmm)
   data_ready_tmm <- collapse_psm(data_ready_tmm)
@@ -134,13 +199,28 @@ if (psm_input){
 }
 
 
+# collapse peptide to protein
+if (peptide_to_protein){
+  data_ready <- collapse_peptide(data_ready)
+  data_ready_fill <- collapse_peptide(data_ready_fill)
+  data_ready_sl <- collapse_peptide(data_ready_sl)
+  data_ready_sl_tmm <- collapse_peptide(data_ready_sl_tmm)
+  data_ready_tmm <- collapse_peptide(data_ready_tmm)
+  info_columns <- ncol(data_ready) - sample_number
+  info_headers <- colnames(data_ready[1:info_columns])
+  final_sample_header <- c(info_headers, sample_header)
+}
+
+
 if (phos_peptide_only){
   data_peptide <- data_ready
+  data_peptide_fill <- data_ready_fill
   data_peptide_sl <- data_ready_sl
   data_peptide_sl_tmm <- data_ready_sl_tmm
   data_peptide_tmm <- data_ready_tmm
   
   data_ready <- data_peptide[grepl("Phospho", data_peptide$Modifications, ignore.case=TRUE),]
+  data_ready_fill <- data_peptide[grepl("Phospho", data_peptide$Modifications, ignore.case=TRUE),]
   data_ready_sl <- data_peptide_sl[grepl("Phospho", data_peptide_sl$Modifications, ignore.case=TRUE),]
   data_ready_sl_tmm <- data_peptide_sl_tmm[grepl("Phospho", data_peptide_sl_tmm$Modifications, ignore.case=TRUE),]
   data_ready_tmm <- data_peptide_tmm[grepl("Phospho", data_peptide_tmm$Modifications, ignore.case=TRUE),]
@@ -151,15 +231,18 @@ if (phos_peptide_only){
 # stats
 #-----------------------------------------------------------------------------------------
 
-PCA_gw(data_ready[(info_columns+1):ncol(data_ready)], "Raw Data")
+#PCA_gw(data_ready[(info_columns+1):ncol(data_ready)], "Raw Data")
+PCA_gw(data_ready_fill[(info_columns+1):ncol(data_ready_fill)], "Raw Filled")
 PCA_gw(data_ready_sl[(info_columns+1):ncol(data_ready_sl)], "SL Normalized")
 PCA_gw(data_ready_tmm[(info_columns+1):ncol(data_ready_tmm)], "TMM Normalized")
 PCA_gw(data_ready_sl_tmm[(info_columns+1):ncol(data_ready_sl_tmm)], "TMM SL Normalized")
 
 
-
-data_ready_final <- stat_test_gw(data_ready[1:info_columns], 
-                                 data_ready[(info_columns+1):ncol(data_ready)],
+#data_ready_final <- stat_test_gw(data_ready[1:info_columns], 
+                                 #data_ready[(info_columns+1):ncol(data_ready)],
+                                 #"Raw Data")
+data_ready_fill_final <- stat_test_gw(data_ready_fill[1:info_columns], 
+                                 data_ready_fill[(info_columns+1):ncol(data_ready_fill)],
                                  "Raw Data")
 data_ready_sl_final <- stat_test_gw(data_ready_sl[1:info_columns], 
                                     data_ready_sl[(info_columns+1):ncol(data_ready_sl)],
@@ -178,19 +261,22 @@ if (normalize_to_protein == TRUE) {
 
 
 #fix headers
-colnames(data_ready_final) <- final_sample_header
+#colnames(data_ready_final) <- final_sample_header
+colnames(data_ready_fill_final) <- final_sample_header
 colnames(data_ready_sl_final) <- final_sample_header
 colnames(data_ready_tmm_final) <- final_sample_header
 colnames(data_ready_sl_tmm_final) <- final_sample_header
 
 #--csv output
-write.csv(data.frame(data_ready_final), file= str_c(file_prefix, "_final.csv", collapse = " "))
+#write.csv(data.frame(data_ready_final), file= str_c(file_prefix, "_final.csv", collapse = " "))
+write.csv(data.frame(data_ready_fill_final), file= str_c(file_prefix, "_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_sl_final), file= str_c(file_prefix, "_sl_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_tmm_final), file= str_c(file_prefix, "_tmm_final.csv", collapse = " "))
 write.csv(data.frame(data_ready_sl_tmm_final), file= str_c(file_prefix, "_sl_tmm_final.csv", collapse = " "))
 
 # create plots for BirA, Carbox, Avidin, Bait, ADH
-BioID_normalize_gw(data_ready, "Raw")
+#BioID_normalize_gw(data_ready, "Raw")
+BioID_normalize_gw(data_ready_fill, "Fill")
 BioID_normalize_gw(data_ready_sl, "SL")
 BioID_normalize_gw(data_ready_tmm, "TMM")
 BioID_normalize_gw(data_ready_sl_tmm, "SL TMM")
@@ -206,14 +292,15 @@ if (normalize_to_protein == TRUE) {
 # create summary table for CV's for groups under different normalize conditions
 cv_start <- info_columns+sample_number+sample_number+1
 raw_avg_cv <- colMeans(data_ready_final[cv_start:(cv_start+group_number-1)])
+fill_avg_cv <- colMeans(data_ready_fill_final[cv_start:(cv_start+group_number-1)])
 sl_avg_cv <- colMeans(data_ready_sl_final[cv_start:(cv_start+group_number-1)])
 tmm_avg_cv <- colMeans(data_ready_tmm_final[cv_start:(cv_start+group_number-1)])
 sl_tmm_avg_cv <- colMeans(data_ready_sl_tmm_final[cv_start:(cv_start+group_number-1)])
 if (normalize_to_protein == TRUE) {
   protein_avg_cv <- colMeans(data_ready_protein_norm_final[cv_start:(cv_start+group_number-1)])
-  final_cv_avg <- rbind(raw_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv, protein_avg_cv )
+  final_cv_avg <- rbind(raw_avg_cv, fill_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv, protein_avg_cv )
 }else{
-  final_cv_avg <- rbind(raw_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv)
+  final_cv_avg <- rbind(raw_avg_cv, fill_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv)
 }
 
 png(filename=str_c(output_dir, "Final_CV_Avg.png"), width = 888, height = 571)
@@ -224,7 +311,8 @@ dev.off()
 
 
 # final excel tables with tabs for each comparison, subset by pval, fc
-Final_Excel_gw(data_ready_final, "_raw_final.xlsx")
+#Final_Excel_gw(data_ready_final, "_raw_final.xlsx")
+Final_Excel_gw(data_ready_fill_final, "_fill_final.xlsx")
 Final_Excel_gw(data_ready_sl_final, "_sl_final.xlsx")
 Final_Excel_gw(data_ready_tmm_final, "_tmm_final.xlsx")
 Final_Excel_gw(data_ready_sl_tmm_final, "_sl_tmm_final.xlsx")

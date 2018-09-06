@@ -57,7 +57,8 @@ psm_decoy <- function(forward_data, decoy_data){
 
 
 
-# fix holes - by replicate group if more than half of the values exist, replace holes with average, if less than half values exist all values go to area_floor
+# fix holes - by replicate group if more than half of the values exist, replace holes with average, 
+#if less than half values exist all values go to area_floor
 hole_average <- function(data_in){
   for(i in 1:group_number) 
   {
@@ -78,11 +79,15 @@ hole_average <- function(data_in){
     assign(group_list[i], df[1:group_rep[i]])
   }
   
+  
+  
   for(i in 1:group_number)  {data_ready <- cbind(data_ready, get(group_list[i]))}
   data_ready2 <- data_ready[(sample_number+1):(sample_number*2)]
 
   return(data_ready2)
 }
+
+
 
 
 # fix holes - by replicate group if more than half of the values exist, replace holes with average, if less than half values exist all values go to area_floor
@@ -99,7 +104,75 @@ hole_minimum <- function(df){
   return(df[1:sample_number])
 }
 
+# imputation of missing data
 
+hole_fill <- function(data_in){
+  
+  count_align <-0
+  count_onehole <- 0
+  count_censor <- 0
+  
+  for(i in 1:group_number){
+    assign(group_list[i], data.frame(data_in[c(group_startcol[i]:group_endcol[i])]))
+    
+    df <- get(group_list[i])
+    df$sum <- rowSums(df)
+    df$rep <- group_rep[i]
+    df$min <- group_rep[i]/2
+    df$holes <- rowSums(df[1:group_rep[i]] == 0.0)
+    df$average <- apply(df[1:group_rep[i]], 1, FUN = function(x) {mean(x[x > 0])})
+    df$sd <- apply(df[1:group_rep[i]], 1, FUN = function(x) {sd(x[x > 0])})
+    df$bin <- ntile(df$average, 20)  
+    
+    sd_info <- subset(df, holes ==0) %>% group_by(bin) %>% summarize(min = min(average), max = max(average), sd = mean(sd))
+    for (x in 1:19){sd_info$max[x] <- sd_info$min[x+1]}
+    sd_info$max[nrow(sd_info)] <- 100
+    sd_info$min2 <- sd_info$min
+    sd_info$min2[1] <- 0
+    sd_info <- sd_info[-21,]
+    
+    
+    for (j in 1:nrow(data_in)){
+      for (k in 1:group_rep[i]){
+        if (df[j,k] == 0.0 && df$holes[j] <= df$min[j]) {
+          findsd <- sd_info %>% filter(df$average[j] >= min2, df$average[j]<= max)
+          nf <-  rnorm(1, 0, 1)
+          testsd <- findsd$sd 
+          df[j,k] = df$average[j] + (nf*findsd$sd)
+          count_onehole <- count_onehole+1
+        }
+      }
+    }
+    
+    
+    for (j in 1:nrow(data_in)){
+      for (k in 1:group_rep[i]){
+        if (df[j,k] > 1 && df$holes[j] > df$min[j]) {
+          if (df[j,k] > log(5000000,2)) {
+            df[j,k] = 0.0
+            count_align <- count_align+1}
+        }
+      }
+    }    
+    
+    
+    for (j in 1:nrow(data_in)){
+      for (k in 1:group_rep[i]){
+        if (df[j,k] == 0.0) {
+          df[j,k] = runif(1, sd_info$min[1], sd_info$max[1])
+          count_censor <- count_censor +1}
+      }
+    }    
+    
+    
+    assign(group_list[i], df[1:group_rep[i]])
+  }
+  
+  for(i in 1:group_number)  {data_ready <- cbind(data_ready, get(group_list[i]))}
+  data_ready2 <- data_ready[(sample_number+1):(sample_number*2)]
+  
+  return(data_ready2)
+}
 
 
 
@@ -152,6 +225,48 @@ collapse_psm <- function(psm_data){
   final_data2 <- cbind(annotate_df, final_data2)
   
   return(final_data2)
+}
+
+
+
+#--- collapse peptide to protein-------------------------------------------------------------
+collapse_peptide <- function(peptide_data){
+  test1 <- peptide_data[ , c(2:3, (info_columns+1):ncol(peptide_data))]
+  colnames(test1)[colnames(test1) == 'Master Protein Accessions'] <- 'Accessions'
+  colnames(test1)[colnames(test1) == 'Master Protein Descriptions'] <- 'Descriptions'
+  test1$TotalPeptide <- 1.0
+  
+  test2 <- test1[ ,c(1, ncol(test1), 3:(sample_number+2)    )]
+  test2$Accessions <- gsub(" ", "", test2$Accessions)
+  
+  test3 <- test2 %>% group_by(Accessions) %>% summarise_all(funs(sum))
+  
+  test4 <- merge( protein_names, test3,  by.x = "Accession", by.y = "Accessions")
+  
+  return(test4)
+}
+
+#--- collapse peptide to protein-------------------------------------------------------------
+collapse_peptide2 <- function(peptide_data){
+  peptide_data<-data_ready
+  test1 <- peptide_data[ , c(2:3, (info_columns+1):ncol(peptide_data))]
+  colnames(test1)[colnames(test1) == 'Master Protein Accessions'] <- 'Accessions'
+  colnames(test1)[colnames(test1) == 'Master Protein Descriptions'] <- 'Descriptions'
+  test2 <- test1[!grepl(";", test1$Accessions, ignore.case=TRUE),]
+  test3 <- test1[grepl(";", test1$Accessions, ignore.case=TRUE),]
+  test3 <- separate_rows(test3, sep=";", Accessions)
+  test2$TotalPeptide <-1.0
+  test2$UniquePeptide<-1.0
+  test3$TotalPeptide<-1.0
+  test3$UniquePeptide<-0.0
+  test4 <- rbind(test2, test3)
+  test4 <- test4[ ,c(1, (ncol(test4)-1):ncol(test4), 3:(sample_number+2)    )]
+  test4$Accessions <- gsub(" ", "", test4$Accessions)
+  test5 <- test4 %>% group_by(Accessions) %>% summarise_all(funs(sum))
+  
+  test6 <- merge( protein_names, test5,  by.x = "Accession", by.y = "Accessions")
+  
+  return(test6)
 }
  
 
