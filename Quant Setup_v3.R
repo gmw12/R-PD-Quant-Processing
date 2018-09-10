@@ -6,20 +6,20 @@ psm_input <- FALSE
 psm_to_peptide <- FALSE
 phos_peptide_only <- FALSE
 peptide_to_protein <- TRUE
-normalize_to_protein <- FALSE
-holes <- "Average"  #"Average", "Minimum", "Floor"
-area_floor <- 1000
+normalize_to_protein <- TRUE
+holes <- "Floor"  #"Average", "Minimum", "Floor"
+area_floor <- 1
 pvalue_cutoff <- 0.05
 fc_cutoff <- 2
-PairComp <- FALSE
+PairComp <- TRUE
 color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
-file_prefix <- "5081_GluC_Open_090618"
+file_prefix <- "4844_091018"
 # excel export from PD
-forward_data <- read_excel("5081_GluC_Open_ProteinPeptide_090518.xlsx", 1)
+forward_data <- read_excel("4844 Protein Peptide 090718.xlsx", 1)
 # excel export from PD for decoy data
 # decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
 # excel file contains 3 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Group
-sample_info <- read_excel("5081_SampleList_GluCOpen.xlsx", 1)
+sample_info <- read_excel("4844_SampleList_090618.xlsx", 1)
 
 # Protein accession numbers for plots and can normalize by 
 adh_list <- c("P00330")

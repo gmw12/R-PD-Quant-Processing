@@ -34,7 +34,7 @@ if (psm_input) {
 
 #replaces NA, no data, with assigned value
 #if (holes == "Floor") {data_raw[is.na(data_raw)] <- area_floor
-#  }else{data_raw[is.na(data_raw)] <- 0}
+# }else{data_raw[is.na(data_raw)] <- 0}
 
 
 #----- edit column headers
@@ -67,7 +67,7 @@ data_ready[is.na(data_ready)] <- 0.0
 total_row <- rowSums(data_ready[(info_columns+1):total_columns])
 total_row <- data_frame(total_row)
 data_ready <- cbind(data_ready, total_row)
-data_ready <- subset(data_ready, total_row > 0)
+data_ready <- subset(data_ready, total_row > sample_number)
 data_ready <- data_ready[1:total_columns]
 
 data_holes <- data_ready
@@ -91,8 +91,13 @@ colnames(data_ready) <- sample_header[1:sample_number]
 
 normal_data_ready <- data_ready
 
+#original_data_ready <- data_ready
+
 data_ready <- log(data_ready,2)
 data_ready[data_ready==-Inf] = 0
+
+#original_data_ready_log <- data_ready
+#check_unlog <- data.frame(2^(data_ready))
 
 #normalize on data with no missing values, create new data frame
 data_ready$holes <- rowSums(data_ready == 0.0)
@@ -128,10 +133,23 @@ data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data a
 #--------------------------------------------
 # global scaling value, sample loading normalization
 if (normalize_to_protein == TRUE) {
-  protein_norm_raw <-subset(data_ready, rownames(data_ready) %in% protein_norm_list)
+  protein_norm_raw <- cbind(annotate_df, data_ready)
+  colnames(protein_norm_raw)[colnames(protein_norm_raw) == 'Master Protein Accessions'] <- 'Accessions'
+  protein_norm_raw <-subset(protein_norm_raw, Accessions %in% protein_norm_list)
+ # protein_norm_raw <-subset(data_ready, Accessions %in% protein_norm_list)
+  
+  protein_norm_raw <- protein_norm_raw[(info_columns+1):ncol(protein_norm_raw)]
+  
+  protein_norm_raw$holes <- rowSums(protein_norm_raw == 0.0)
+  
+  protein_norm_raw <- subset(protein_norm_raw, holes==0)
+  protein_norm_raw <- protein_norm_raw[1:sample_number]
   target <- mean(colSums((protein_norm_raw)))
   norm_facs <- target / colSums(protein_norm_raw)
   data_ready_protein_norm <- sweep(data_ready, 2, norm_facs, FUN = "*")
+  data_ready_protein_norm <- hole_fill(data_ready_protein_norm)
+  data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))
+  
 }
 
 
@@ -206,6 +224,8 @@ if (peptide_to_protein){
   data_ready_sl <- collapse_peptide(data_ready_sl)
   data_ready_sl_tmm <- collapse_peptide(data_ready_sl_tmm)
   data_ready_tmm <- collapse_peptide(data_ready_tmm)
+  if (normalize_to_protein == TRUE) {  
+    data_ready_protein_norm <- collapse_peptide(data_ready_protein_norm)}
   info_columns <- ncol(data_ready) - sample_number
   info_headers <- colnames(data_ready[1:info_columns])
   final_sample_header <- c(info_headers, sample_header)
@@ -291,16 +311,16 @@ if (normalize_to_protein == TRUE) {
 
 # create summary table for CV's for groups under different normalize conditions
 cv_start <- info_columns+sample_number+sample_number+1
-raw_avg_cv <- colMeans(data_ready_final[cv_start:(cv_start+group_number-1)])
+#raw_avg_cv <- colMeans(data_ready_final[cv_start:(cv_start+group_number-1)])
 fill_avg_cv <- colMeans(data_ready_fill_final[cv_start:(cv_start+group_number-1)])
 sl_avg_cv <- colMeans(data_ready_sl_final[cv_start:(cv_start+group_number-1)])
 tmm_avg_cv <- colMeans(data_ready_tmm_final[cv_start:(cv_start+group_number-1)])
 sl_tmm_avg_cv <- colMeans(data_ready_sl_tmm_final[cv_start:(cv_start+group_number-1)])
 if (normalize_to_protein == TRUE) {
   protein_avg_cv <- colMeans(data_ready_protein_norm_final[cv_start:(cv_start+group_number-1)])
-  final_cv_avg <- rbind(raw_avg_cv, fill_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv, protein_avg_cv )
+  final_cv_avg <- rbind(fill_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv, protein_avg_cv )
 }else{
-  final_cv_avg <- rbind(raw_avg_cv, fill_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv)
+  final_cv_avg <- rbind(fill_avg_cv, sl_avg_cv, tmm_avg_cv, sl_tmm_avg_cv)
 }
 
 png(filename=str_c(output_dir, "Final_CV_Avg.png"), width = 888, height = 571)
