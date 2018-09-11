@@ -18,6 +18,7 @@ protein_peptide_input <- TRUE
 peptide_to_protein <- TRUE
 normalize_to_protein <- TRUE
 PairComp <- TRUE
+log_normalize <- TRUE #log2 intensitites prior to normalization, will unlog after to report unlog intensities
 
 
 holes <- "Impute"  # "Impute", Average", "Minimum", "Floor"

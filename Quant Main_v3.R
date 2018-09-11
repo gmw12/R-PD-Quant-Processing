@@ -10,8 +10,14 @@ if (psm_input) {
   }  
 
 #replaces NA, no data, with assigned value
-if (holes == "Floor") {data_ready[is.na(data_ready)] <- area_floor
- }else{data_ready[is.na(data_ready)] <- 0.0}
+if (holes == "Floor") {
+  data_ready[is.na(data_ready)] <- area_floor
+} else if (holes == "Average") {
+  data_ready <- hole_average(data_ready)
+} else if (holes == "Minimium") {
+  data_ready <- hole_minimum(data_ready)
+} else {
+  data_ready[is.na(data_ready)] <- 0.0}
 
 
 # create column to sum abundances, flag and delete rows with no data
@@ -37,8 +43,9 @@ if (psm_input){
 colnames(data_ready) <- sample_header[1:sample_number]
 
 # log2 data for normalization
-data_ready <- log(data_ready,2)
-data_ready[data_ready==-Inf] = 0  # fix log2 of 0
+if (log_normalize){
+  data_ready <- log(data_ready,2)
+  data_ready[data_ready==-Inf] = 0}  # fix log2 of 0
 
 
 #normalize on data with no missing values, create new data frame
@@ -66,10 +73,10 @@ data_ready_tmm <- sweep(data_ready, 2, raw_tmm, FUN = "/") # this is data after 
 #---------------------------------------------
 # TMM & SL Normalized, step moved to after imputation of TMM
 #--------------------------------------------
-# see exactly what TMM does with SL data
-sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
-data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
-
+if (holes != "Impute"){
+  sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
+  data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
+}
 
 #---------------------------------------------
 # Specific Protein Normalized Data, ie carboxylases
@@ -91,23 +98,24 @@ if (normalize_to_protein) {
 #----------------------------------
 # fill missing data, "unlog"
 #----------------------------------------
+if (holes == "Impute"){
+  data_ready_fill <- hole_fill(data_ready)
+  data_ready_sl <- hole_fill(data_ready_sl)
+  data_ready_tmm <- hole_fill(data_ready_tmm)
+  data_ready_sl_tmm <- hole_fill(data_ready_sl_tmm)
+  if(normalize_to_protein) {data_ready_protein_norm <- hole_fill(data_ready_protein_norm)}
 
-data_ready_fill <- hole_fill(data_ready)
-data_ready_sl <- hole_fill(data_ready_sl)
-data_ready_tmm <- hole_fill(data_ready_tmm)
-data_ready_sl_tmm <- hole_fill(data_ready_sl_tmm)
-if(normalize_to_protein) {data_ready_protein_norm <- hole_fill(data_ready_protein_norm)}
+  sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
+  data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
+}
 
-sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
-data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
-
-
-data_ready <- data.frame(2^(data_ready))
-data_ready_fill <- data.frame(2^(data_ready_fill))
-data_ready_sl <- data.frame(2^(data_ready_sl))
-data_ready_tmm <- data.frame(2^(data_ready_tmm))
-data_ready_sl_tmm <- data.frame(2^(data_ready_sl_tmm))
-if(normalize_to_protein) {data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))}
+if (log_normalize){
+  data_ready <- data.frame(2^(data_ready))
+  data_ready_fill <- data.frame(2^(data_ready_fill))
+  data_ready_sl <- data.frame(2^(data_ready_sl))
+  data_ready_tmm <- data.frame(2^(data_ready_tmm))
+  data_ready_sl_tmm <- data.frame(2^(data_ready_sl_tmm))
+  if(normalize_to_protein) {data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))}}
 
 # fix unlog of 0
 data_ready[data_ready ==1 ] <- 0
