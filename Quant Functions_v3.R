@@ -246,28 +246,6 @@ collapse_peptide <- function(peptide_data){
   return(test4)
 }
 
-#--- collapse peptide to protein-------------------------------------------------------------
-collapse_peptide2 <- function(peptide_data){
-  peptide_data<-data_ready
-  test1 <- peptide_data[ , c(2:3, (info_columns+1):ncol(peptide_data))]
-  colnames(test1)[colnames(test1) == 'Master Protein Accessions'] <- 'Accessions'
-  colnames(test1)[colnames(test1) == 'Master Protein Descriptions'] <- 'Descriptions'
-  test2 <- test1[!grepl(";", test1$Accessions, ignore.case=TRUE),]
-  test3 <- test1[grepl(";", test1$Accessions, ignore.case=TRUE),]
-  test3 <- separate_rows(test3, sep=";", Accessions)
-  test2$TotalPeptide <-1.0
-  test2$UniquePeptide<-1.0
-  test3$TotalPeptide<-1.0
-  test3$UniquePeptide<-0.0
-  test4 <- rbind(test2, test3)
-  test4 <- test4[ ,c(1, (ncol(test4)-1):ncol(test4), 3:(sample_number+2)    )]
-  test4$Accessions <- gsub(" ", "", test4$Accessions)
-  test5 <- test4 %>% group_by(Accessions) %>% summarise_all(funs(sum))
-  
-  test6 <- merge( protein_names, test5,  by.x = "Accession", by.y = "Accessions")
-  
-  return(test6)
-}
  
 
 #t.test ---------------------------------
@@ -438,16 +416,8 @@ PCA_gw <- function(x,y) {
         title = y)
     snapshotPCA3d(file=str_c(output_dir, y, "_PCA3d", ".png"))
     
-    png(filename=str_c(output_dir, y, "_PCA2D.png"), width = 888, height = 571)    
-      pca2d(x_pca, 
-            group=x_gr, 
-            radius = 2,
-            legend="topleft")
-    dev.off()
-    
-    
     df_out <- as.data.frame(x_pca$x)
-    file_name <- str_c(output_dir, y, "_PCA2D_.png")
+    file_name <- str_c(output_dir, y, "_PCA2D.png")
     ggplot(df_out,aes(x=PC1,y=PC2,color=x_gr )) +
       geom_point(size =2) +
       theme(legend.title=element_blank()) +
@@ -524,7 +494,6 @@ stat_test_gw <- function(annotate_in, data_in, title) {
     volcano_gw(data_in, get(comp_fc2_groups[i]), get(comp_pval_groups[i]), newtitle, plottitle)
   }
   
-  
   # Create tables for excel--------------------------------------------------
   data_table <- cbind(annotate_in, data_ready[(info_columns+1):ncol(data_ready)], data_in)
   for(i in 1:group_number)  {data_table <- cbind(data_table, get(group_cv[i]))}
@@ -532,25 +501,6 @@ stat_test_gw <- function(annotate_in, data_in, title) {
     data_table <- cbind(data_table, get(comp_fc_groups[i]), get(comp_fc2_groups[i]), get(comp_pval_groups[i]))}
   return(data_table)
 }
-
-
-
-
-
-
-
-filter_stats_gw <- function(data_in) {
-  
-  
-}
-
-
-
-
-
-
-
-
 
 
 
@@ -592,6 +542,8 @@ BioID_normalize_gw <- function(test_data, title) {
 }  
 
 
+
+# create final excel documents
 Final_Excel_gw <- function(df, filename) {
   tempfile <- str_c(file_prefix, filename)
   wb <- createWorkbook()

@@ -2,33 +2,43 @@
 # User input
 #-------------------------------------------
 
-psm_input <- FALSE
-psm_to_peptide <- FALSE
-phos_peptide_only <- FALSE
-peptide_to_protein <- TRUE
-normalize_to_protein <- TRUE
-holes <- "Floor"  #"Average", "Minimum", "Floor"
-area_floor <- 1
-pvalue_cutoff <- 0.05
-fc_cutoff <- 2
-PairComp <- TRUE
-color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
-file_prefix <- "4844_091018"
 # excel export from PD
-forward_data <- read_excel("4844 Protein Peptide 090718.xlsx", 1)
+forward_data <- read_excel("5116 protein peptide 091118.xlsx", 1)
+# excel file contains 4 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Label, Group
+sample_info <- read_excel("5116_SampleList_091118.xlsx", 1)
 # excel export from PD for decoy data
 # decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
-# excel file contains 3 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Group
-sample_info <- read_excel("4844_SampleList_090618.xlsx", 1)
+# file prefix for excel outputs
+file_prefix <- "5116_091118"
 
-# Protein accession numbers for plots and can normalize by 
+
+psm_input <- FALSE
+psm_to_peptide <- FALSE
+protein_peptide_input <- TRUE
+peptide_to_protein <- TRUE
+normalize_to_protein <- TRUE
+PairComp <- TRUE
+
+
+holes <- "Impute"  # "Impute", Average", "Minimum", "Floor"
+area_floor <- 1000
+pvalue_cutoff <- 0.05
+fc_cutoff <- 2
+color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
+
+
+
+# Protein accession numbers for plots and normalization
 adh_list <- c("P00330")
 bait_list <- c("P02662","P02663")
 avidin_list <- c("P02701")
-carbox_list <- c("Q05920", "Q91ZA3", "Q5SWU9")
-protein_norm_list <- c("Q05920", "Q91ZA3", "Q5SWU9") #use these if normalize_to_protein <- TRUE
-# carbox_list <- c("Q05920", "Q91ZA3")
-bira_list <- c("P06709")
+#carbox_list <- c("Q05920", "Q91ZA3", "Q5SWU9") #mouse
+carbox_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #zebrafish
+#bira_list <- c("P06709")
+bira_list <- c("O66837")
+protein_norm_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #use these if normalize_to_protein <- TRUE
+
+
 
 
 
@@ -126,3 +136,40 @@ output_dir <- ".//output_files//"
 file_prefix <- str_c(output_dir, file_prefix)
 
 
+#format data from nested protein/peptide output to peptide only
+if (protein_peptide_input){
+  forward_data$`Protein FDR Confidence: Combined`[is.na(forward_data$`Protein FDR Confidence: Combined`)] <- ""  
+  for(i in 1:nrow(forward_data)) {
+    if(forward_data[i,1] == "High") {set_accession <- forward_data[i,3]
+    }else{forward_data[i,3] <- set_accession}
+  }
+  
+  protein_names <- forward_data
+  colnames(protein_names)[1] <- "filter"
+  protein_names <- subset(protein_names, filter=="High")
+  protein_names <- protein_names[ , c(3:4)]
+  peptide_header <- forward_data[2,]
+  forward_data <- subset(forward_data, Master=="High")
+  colnames(forward_data) <- peptide_header
+  forward_data <- forward_data[,-1]
+  colnames(forward_data)[colnames(forward_data) == 'Quan Usage'] <- 'Used'
+  forward_data <- subset(forward_data, Used=="Used")
+  forward_data <- forward_data[-ncol(forward_data)]
+  forward_data[(ncol(forward_data)-sample_number+1):ncol(forward_data)] <- as.numeric(unlist(forward_data[(ncol(forward_data)-sample_number+1):ncol(forward_data)]))
+  colnames(forward_data)[2] <- "Master Protein Accessions"
+}
+
+#----- edit column headers
+col_headers <- colnames(forward_data) 
+col_headers <- str_replace(col_headers, "Protein FDR Confidence: Mascot", "Confidence")
+col_headers <- str_replace(col_headers, "Protein FDR Confidence: Combined", "Confidence")
+col_headers <- str_replace(col_headers, "Annotated Sequence", "Annotated_Sequence")
+col_headers <- str_replace(col_headers, "Master Protein Accessions", "Accessions")
+col_headers <- str_replace(col_headers," \\(by Search Engine\\): Mascot", "")
+col_headers <- str_replace(col_headers,"\\[", "")
+col_headers <- str_replace(col_headers,"\\]", "")
+colnames(forward_data) <- col_headers
+total_columns <- ncol(forward_data)
+info_columns <- total_columns - sample_number
+info_headers <- colnames(forward_data[1:info_columns])
+final_sample_header <- c(info_headers, sample_header)
