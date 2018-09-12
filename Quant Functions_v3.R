@@ -250,7 +250,7 @@ collapse_peptide <- function(peptide_data){
 
 #t.test ---------------------------------
 ttest_gw <- function(x,y) {
-  if (!PairComp){
+  if (!pair_comp){
   ttest_pvalue = try(t.test(x,y, 
                             alternative="two.sided",
                             var.equal = FALSE,
@@ -271,7 +271,7 @@ cohend_gw <- function(x,y) {
 
 #fold change ---------------------------------
 foldchange_gw <- function(x,y) {
-  if(!PairComp){
+  if(!pair_comp){
     ave_x = rowMeans(x)
     ave_y = rowMeans(y)
     test = ave_x/ave_y
@@ -303,7 +303,7 @@ foldchange_pair_gw <- function(x,y) {
 
 #fold change decimal ---------------------------------
 foldchange_decimal_gw <- function(x,y) {
-  if(!PairComp){
+  if(!pair_comp){
   ave_x = rowMeans(x)
     ave_y = rowMeans(y)
     test = ave_x/ave_y
@@ -355,7 +355,9 @@ Plot_All_gw <- function(df, y) {
 #Box plot-------------------------------------------------
 boxplot_gw <- function(x,y) {
   png(filename=str_c(output_dir, y, "_boxplot.png"), width = 888, height = 571)
-  boxplot(log2(x), 
+  data_box <- log2(x)
+  data_box[data_box ==-Inf ] <- NA
+  boxplot(data_box, 
           col = color_list, 
           notch = TRUE, 
           boxwex = 0.8,
@@ -401,6 +403,8 @@ plotDensities_gw <- function(x,y) {
 
 #PCA 2D 3D-------------------------------------------------
 PCA_gw <- function(x,y) {
+    require(pca3d)
+    require(rgl)
     x_transpose <- t(x)
     x_transpose <-data.frame(x_transpose)
     row.names(x_transpose) <- NULL
@@ -545,6 +549,7 @@ BioID_normalize_gw <- function(test_data, title) {
 
 # create final excel documents
 Final_Excel_gw <- function(df, filename) {
+  require(openxlsx)
   tempfile <- str_c(file_prefix, filename)
   wb <- createWorkbook()
   addWorksheet(wb, deparse(substitute(df)))

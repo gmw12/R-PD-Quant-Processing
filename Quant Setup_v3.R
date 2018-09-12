@@ -17,7 +17,7 @@ psm_to_peptide <- FALSE
 protein_peptide_input <- TRUE
 peptide_to_protein <- TRUE
 normalize_to_protein <- TRUE
-PairComp <- TRUE
+pair_comp <- FALSE
 log_normalize <- TRUE #log2 intensitites prior to normalization, will unlog after to report unlog intensities
 
 
@@ -38,11 +38,6 @@ carbox_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #zebrafish
 #bira_list <- c("P06709")
 bira_list <- c("O66837")
 protein_norm_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #use these if normalize_to_protein <- TRUE
-
-
-
-
-
 
 
 
@@ -159,6 +154,7 @@ if (protein_peptide_input){
   forward_data[(ncol(forward_data)-sample_number+1):ncol(forward_data)] <- as.numeric(unlist(forward_data[(ncol(forward_data)-sample_number+1):ncol(forward_data)]))
   colnames(forward_data)[2] <- "Master Protein Accessions"
 }
+
 
 #----- edit column headers
 col_headers <- colnames(forward_data) 

@@ -31,9 +31,6 @@ annotate_df <- data_ready[1:info_columns]
 data_ready <- data_ready[(info_columns+1):total_columns]
 #row.names(data_ready) <- annotate_df$`Accessions` delete later if no errors 
 
-#remove unused data frames
-try(rm(forward_data, decoy_data, total_row), silent = TRUE)
-
 #arrange columns if psm data
 if (psm_input){
   data_ready <- order_columns(data_ready)
@@ -102,7 +99,6 @@ if (holes == "Impute"){
   data_ready_fill <- hole_fill(data_ready)
   data_ready_sl <- hole_fill(data_ready_sl)
   data_ready_tmm <- hole_fill(data_ready_tmm)
-  data_ready_sl_tmm <- hole_fill(data_ready_sl_tmm)
   if(normalize_to_protein) {data_ready_protein_norm <- hole_fill(data_ready_protein_norm)}
 
   sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
@@ -115,7 +111,8 @@ if (log_normalize){
   data_ready_sl <- data.frame(2^(data_ready_sl))
   data_ready_tmm <- data.frame(2^(data_ready_tmm))
   data_ready_sl_tmm <- data.frame(2^(data_ready_sl_tmm))
-  if(normalize_to_protein) {data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))}}
+  if(normalize_to_protein) {data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))}
+}
 
 # fix unlog of 0
 data_ready[data_ready ==1 ] <- 0
