@@ -131,6 +131,7 @@ hole_fill <- function(data_in){
     sd_info$min2[1] <- 0
     sd_info <- sd_info[-21,]
     
+  
     
     for (j in 1:nrow(data_in)){
       for (k in 1:group_rep[i]){
@@ -635,4 +636,35 @@ cv_stats <- function() {
           las=1,
           par(mar=c(8,10,4,2)))
   dev.off()
+}
+
+
+
+lr_normalize <- function(data_normalize, data_ready) {
+  data_lr <- data_normalize
+  data_out <- data_ready
+  data_out[data_out==0] <-NA
+  
+  for(i in 1:sample_number){
+    temp <- data_lr[,i]
+    colnames(temp) <- "test"
+    temp <- arrange(temp, test)
+    data_lr[,i] <- temp
+  }
+  
+  colnames(data_lr) <- seq(from=1, to=sample_number)
+  data_lr$avg <- apply(data_lr, 1, FUN = function(x) {mean(x[x > 0])})
+  
+  for(i in 1:sample_number){
+    data_test <- cbind(data_lr[,i], data_lr$avg)
+    colnames(data_test) <- c("x", "y")
+    LMfit <- rlm(y~x, data_test, na.action=na.exclude)
+    Coeffs <- LMfit$coefficients
+    m <- Coeffs[2] # y = mX + b
+    b <- Coeffs[1] 
+    normdata <- (data_out[,i] - b) / m
+    data_out[,i] <- normdata
+  }
+  data_out[is.na(data_out)] <- 0.0
+  return(data_out)
 }

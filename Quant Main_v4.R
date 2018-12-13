@@ -146,7 +146,7 @@ if (psm_input) {
 
 # create column to flag and delete rows with no data
 data_ready$na_count <- apply(data_ready, 1, function(x) sum(is.na(x)))
-data_ready <- subset(data_ready, data_ready$na_count < sample_number)
+data_ready <- subset(data_ready, data_ready$na_count < (sample_number))
 data_ready <- data_ready[1:total_columns]
 
 # save the annotation columns for later and remove from data frame
@@ -155,33 +155,37 @@ data_ready <- data_ready[(info_columns+1):total_columns]
 #row.names(data_ready) <- annotate_df$`Accessions` delete later if no errors 
 
 
+#reorder data if needed, will use PD_order from sample list
+data_ready <- order_columns(data_ready)
+
+
 # create histogram of all measured values in data set, compare against hole fill confidence value
 histogram_gw(data_ready,"Total_Set_Intensity","Log2 Intensity Distribution")
 
+#save copy of raw data ready, if protein/peptide input will be peptide data
+write.csv(cbind(annotate_df, data_ready), file= str_c(file_prefix, "_Raw.csv", collapse = " "))
 
 
 #replaces NA, no data, with assigned value
 if (holes == "Floor") {
   data_ready[is.na(data_ready)] <- area_floor
+  write.csv(cbind(annotate_df, data_ready), file= str_c(file_prefix, "_Floor.csv", collapse = " "))
 } else if (holes == "Average") {
   data_ready <- hole_average(data_ready)
+  write.csv(cbind(annotate_df, data_ready), file= str_c(file_prefix, "_Average.csv", collapse = " "))
 } else if (holes == "Minimium") {
   data_ready <- hole_minimum(data_ready)
+  write.csv(cbind(annotate_df, data_ready), file= str_c(file_prefix, "_Minimum.csv", collapse = " "))
 } else {
   data_ready[is.na(data_ready)] <- 0.0}
 
-
-#arrange columns if psm data
-if (psm_input){
-  data_ready <- order_columns(data_ready)
-}
 
 #change column names to from PD default to user defined
 colnames(data_ready) <- sample_header[1:sample_number]
 
 
 #save dataframe with ADH peptides for QC meteric
-ADH_data_raw <-subset(cbind(annotate_df, data_ready), Accessions %in% adh_list)
+ADH_data_raw <-subset(cbind(annotate_df, data_ready), Accession %in% adh_list)
 ADH_data_raw$holes <- rowSums(ADH_data_raw[(info_columns+1):ncol(ADH_data_raw)] ==0)
 ADH_data_raw <- subset(ADH_data_raw, holes==0)
 ADH_data_raw <- ADH_data_raw[ , -ncol(ADH_data_raw)]
@@ -202,7 +206,11 @@ data_normalize <- subset(data_ready, holes==0)
 data_normalize <- data_normalize[1:sample_number]
 data_ready <- data_ready[1:sample_number]
 
-
+#---------------------------------------------
+# LR Normalized 
+#--------------------------------------------
+data_ready_lr <- lr_normalize(data_normalize,data_ready)
+write.csv(cbind(annotate_df, data.frame(2^data_ready_lr)), file= str_c(file_prefix, "_LR_Normalized.csv", collapse = " "))
 
 #---------------------------------------------
 # SL Normalized 
@@ -211,12 +219,14 @@ data_ready <- data_ready[1:sample_number]
 target <- mean(colSums(data_normalize))
 norm_facs <- target / colSums(data_normalize)
 data_ready_sl <- sweep(data_ready, 2, norm_facs, FUN = "*")
+write.csv(cbind(annotate_df, data.frame(2^data_ready_sl)), file= str_c(file_prefix, "_SL_Normalized.csv", collapse = " "))
 
 #---------------------------------------------
 # TMM Normalized 
 #--------------------------------------------
 raw_tmm <- calcNormFactors(data_normalize, method = "TMM", sumTrim = 0.1)
 data_ready_tmm <- sweep(data_ready, 2, raw_tmm, FUN = "/") # this is data after SL and TMM on original scale
+write.csv(cbind(annotate_df, data.frame(2^data_ready_tmm)), file= str_c(file_prefix, "_TMM_Normalized.csv", collapse = " "))
 
 #---------------------------------------------
 # TMM & SL Normalized, step moved to after imputation of TMM
@@ -224,6 +234,7 @@ data_ready_tmm <- sweep(data_ready, 2, raw_tmm, FUN = "/") # this is data after 
 if (holes != "Impute"){
   sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
   data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
+  write.csv(cbind(annotate_df, data.frame(2^data_ready_sl_tmm)), file= str_c(file_prefix, "_SLTMM_Normalized.csv", collapse = " "))
 }
 
 #---------------------------------------------
@@ -240,6 +251,8 @@ if (normalize_to_protein) {
   target <- mean(colSums((protein_norm_raw)))
   norm_facs <- target / colSums(protein_norm_raw)
   data_ready_protein_norm <- sweep(data_ready, 2, norm_facs, FUN = "*")
+  write.csv(cbind(annotate_df, data.frame(2^data_ready_protein_norm)), file= str_c(file_prefix, "_Protein_Normalized.csv", collapse = " "))
+  
 }
 
 
@@ -250,7 +263,11 @@ if (holes == "Impute"){
   data_ready_fill <- hole_fill(data_ready)
   data_ready_sl <- hole_fill(data_ready_sl)
   data_ready_tmm <- hole_fill(data_ready_tmm)
-  if(normalize_to_protein) {data_ready_protein_norm <- hole_fill(data_ready_protein_norm)}
+  data_ready_lr <- hole_fill(data_ready_lr)
+  if(normalize_to_protein) {
+    data_ready_protein_norm_missing <- data_ready_protein_norm
+    data_ready_protein_norm <- hole_fill(data_ready_protein_norm)
+    }
 
   sl_tmm <- calcNormFactors(data_ready_sl, method = "TMM", sumTrim = 0.1)
   data_ready_sl_tmm <- sweep(data_ready_sl, 2, sl_tmm, FUN = "/") # this is data after SL and TMM on original scale
@@ -262,17 +279,29 @@ if (log_normalize){
   data_ready_sl <- data.frame(2^(data_ready_sl))
   data_ready_tmm <- data.frame(2^(data_ready_tmm))
   data_ready_sl_tmm <- data.frame(2^(data_ready_sl_tmm))
-  if(normalize_to_protein) {data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))}
+  data_ready_lr <- data.frame(2^(data_ready_lr))
+  if(normalize_to_protein) {
+    data_ready_protein_norm <- data.frame(2^(data_ready_protein_norm))
+    }
 }
 
 # fix unlog of 0
 data_ready[data_ready ==1 ] <- 0
+
+
+write.csv(cbind(annotate_df, data_ready_fill), file= str_c(file_prefix, "_Raw_Impute.csv", collapse = " "))
+write.csv(cbind(annotate_df, data_ready_sl), file= str_c(file_prefix, "_SL_Impute.csv", collapse = " "))
+write.csv(cbind(annotate_df, data_ready_tmm), file= str_c(file_prefix, "_TMM_Impute.csv", collapse = " "))
+write.csv(cbind(annotate_df, data_ready_sl_tmm), file= str_c(file_prefix, "_SLTMM_Impute.csv", collapse = " "))
+write.csv(cbind(annotate_df, data_ready_lr), file= str_c(file_prefix, "_LR_Impute.csv", collapse = " "))
+
 
 #-------------------------------------------
 # Plots, boxplot, MDS, density, barplot
 #------------------------------------------
 
 Plot_All_gw(data_ready, "Raw Data")
+Plot_All_gw(data_ready_lr, "Lin Reg")
 Plot_All_gw(data_ready_fill, "Raw Impute")
 Plot_All_gw(data_ready_sl, "SL Normalized")
 Plot_All_gw(data_ready_tmm, "TMM Normalized")
@@ -282,6 +311,7 @@ if (normalize_to_protein) {Plot_All_gw(data_ready, "Protein Normalized")}
 
 #--recombine annotation and data
 data_ready <- data.frame(annotate_df, data_ready)
+data_ready_lr <- data.frame(annotate_df, data_ready_lr)
 data_ready_fill <- data.frame(annotate_df, data_ready_fill)
 data_ready_sl <- data.frame(annotate_df, data_ready_sl)  
 data_ready_sl_tmm <- data.frame(annotate_df, data_ready_sl_tmm)  
@@ -307,6 +337,7 @@ if (psm_input){
 # collapse peptide to protein
 if (peptide_to_protein){
   data_ready <- collapse_peptide(data_ready)
+  data_ready_lr <- collapse_peptide(data_ready_lr)
   data_ready_fill <- collapse_peptide(data_ready_fill)
   data_ready_sl <- collapse_peptide(data_ready_sl)
   data_ready_sl_tmm <- collapse_peptide(data_ready_sl_tmm)

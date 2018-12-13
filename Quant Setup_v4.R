@@ -5,6 +5,7 @@ library(dplyr)
 library(limma)
 library(edgeR)
 library(gridExtra)
+library(MASS)
 
 
 #-------------------------------------------
@@ -12,34 +13,34 @@ library(gridExtra)
 #-------------------------------------------
 
 # excel export from PD
-forward_data <- read_excel("5116 protein peptide 091118.xlsx", 1)
+forward_data <- read_excel("TMT BetaArrestin Vehicle Str 102718 Protein_4227_102618.xlsx", 1)
 # excel file contains 4 columns, Output order from PD (Protein/peptide order on export, PSM numerical order), ID, Label, Group
-sample_info <- read_excel("5116_SampleList_091118.xlsx", 1)
+sample_info <- read_excel("4227 TMT BetaArrestin Vechicle STR Sample Info.xlsx", 1)
 # excel export from PD for decoy data
 # decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
 # file prefix for excel outputs
-file_prefix <- "5116_091118"
+file_prefix <- "4227_BetaArrestin_VehStr_103118"
 
 
 psm_input <- FALSE
 psm_to_peptide <- FALSE
 
-protein_peptide_input <- TRUE #PD export with nested protein/peptide, need specific columns
-peptide_to_protein <- TRUE  #collapse from
+protein_peptide_input <- FALSE #PD export with nested protein/peptide, need specific columns
+peptide_to_protein <- FALSE  #collapse from
 
-normalize_to_protein <- TRUE  #set accession numbers below for list of target proteins
+normalize_to_protein <- FALSE  #set accession numbers below for list of target proteins
 pair_comp <- FALSE  # pairwise comparison
 
-log_normalize <- TRUE #log2 intensitites prior to normalization, will unlog after to report unlog intensities
+log_normalize <- FALSE #log2 intensitites prior to normalization, will unlog after to report unlog intensities
 
 
-holes <- "Impute"  # "Impute", Average", "Minimum", "Floor"
+holes <- "Minimum"  # "Impute", Average", "Minimum", "Floor"
 intensity_cutoff <- 5000000  # if a replicate group has >50% missing values and a measured value is above this cutoff then the measured value is a misalignment, value will be removed
-area_floor <- 1000
+area_floor <- 1
 
 
 pvalue_cutoff <- 0.05  # extra worksheet is created in excel for each comparison, subset with these cutoff values
-fc_cutoff <- 2
+fc_cutoff <- 1.5
 
 color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
 
@@ -58,7 +59,8 @@ bira_list <- c("O66837") #biotin ligase
 protein_norm_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #use these if normalize_to_protein <- TRUE
 
 
-
 source("Quant Functions_v4.R")
+
+
 
 source("Quant Main_v4.R")
