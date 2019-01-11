@@ -1,7 +1,7 @@
 
 # plot all at once
 Plot_All_gw <- function(df, y) {
-  plot_dir <- create_dir(str_c("output_files//", y))
+  plot_dir <- create_dir(str_c(output_dir, y))
   boxplot_gw(df, y, plot_dir)
   plotMDS_gw(df, y, plot_dir) #str_c(y, "Multidimension Scaling"))
   barplot_gw(df, y, plot_dir)
@@ -28,7 +28,7 @@ limma_volcano <- function(x, comp_name, plot_dir) {
 
 #MA plot-------------------------------------------------
 limma_ma <- function(x, comp_name, plot_dir) {
-  df <- data.frame(data_sl$Accession)
+  df <- data.frame(data_raw$Accession)
   colnames(df) <- "Accession"
   df$baseMean <- x$AveExpr
   df$log2FoldChange <- x$logFC

@@ -3,15 +3,11 @@ options(digits=3)
 
 #format data from nested protein/peptide output to peptide only
 if (protein_peptide_input){forward_data <- protein_to_peptide(forward_data)}
-
-
-# clean column headers and save 
-total_columns <- ncol(forward_data)
-info_columns <- total_columns - sample_number
-final_sample_headers <- clean_headers(colnames(forward_data[1:info_columns]))
-colnames(forward_data) <- final_sample_headers
-
 data_raw <- forward_data
+
+# data stat info
+total_columns <- ncol(data_raw)
+info_columns <- total_columns - sample_number
 
 # create column to flag and delete rows with no data or only one data value
 data_raw$na_count <- apply(data_raw[(info_columns+1):ncol(data_raw)], 1, function(x) sum(!is.na(x)))
@@ -26,16 +22,25 @@ data_raw <- data_raw[(info_columns+1):total_columns]
 #reorder data if needed, will use PD_order from sample list
 data_raw <- order_columns(data_raw)
 
-# create histogram of all measured values in data set, compare against hole fill confidence value
+#clean column headers
+final_sample_headers <- clean_headers(colnames(annotate_df))
+colnames(annotate_df) <- final_sample_headers[1:info_columns]
+colnames(data_raw) <- final_sample_headers[(info_columns+1):ncol(forward_data)]
+
+
+data_raw[data_raw==0] <- NA
+
+
+# create histogram of all measured values in data set, compare against missing fill confidence value
 histogram_gw(data_raw,"Total_Set_Intensity","Log2 Intensity Distribution")
 
-#save dataframe with hole locations
-#hole_df <- data_raw
-#hole_df[hole_df > 0] <- 1
-#hole_df[is.na(hole_df)] <- 0
+#save dataframe with missing locations
+#missing_df <- data_raw
+#missing_df[missing_df > 0] <- 1
+#missing_df[is.na(missing_df)] <- 0
 
 
-#data_raw = no holes filled, data_fil = fill holes according to user choice
+#data_raw = no missings filled, data_fil = fill missings according to user choice
 data_fill <- data_raw
 
 # save raw and process plots
@@ -62,14 +67,14 @@ if (peptide_to_protein){
 total_cv <- data.frame(data_raw$Accession)
 
 # Impute strategy
-if (holes == "Floor") {
+if (missings == "Floor") {
   data_fill[is.na(data_fill)] <- area_floor
   Simple_Excel(cbind(annotate_df, data_fill), str_c(file_prefix3, "_Floor.csv", collapse = " "))
-} else if (holes == "Average") {
-  data_fill <- hole_average(data_fill)
+} else if (missings == "Average") {
+  data_fill <- missing_average(data_fill)
   Simple_Excel(cbind(annotate_df, data_fill), str_c(file_prefix3, "_Average.csv", collapse = " "))
-} else if (holes == "Minimium") {
-  data_fill <- hole_minimum(data_fill)
+} else if (missings == "Minimium") {
+  data_fill <- missing_minimum(data_fill)
   Simple_Excel(cbind(annotate_df, data_fill), str_c(file_prefix3, "_Minimum.csv", collapse = " "))
 } else {
   data_fill[is.na(data_fill)] <- 0.0}
@@ -78,8 +83,8 @@ if (holes == "Floor") {
 #save dataframe with ADH peptides for QC meteric
 if (adh_spike){
   ADH_data_fill <-subset(cbind(annotate_df, data_fill), Accession %in% adh_list)
-  ADH_data_fill$holes <- rowSums(ADH_data_fill[(info_columns+1):ncol(ADH_data_fill)] ==0)
-  ADH_data_fill <- subset(ADH_data_fill, holes==0)
+  ADH_data_fill$missings <- rowSums(ADH_data_fill[(info_columns+1):ncol(ADH_data_fill)] ==0)
+  ADH_data_fill <- subset(ADH_data_fill, missings==0)
   ADH_data_fill <- ADH_data_fill[ , -ncol(ADH_data_fill)]
   ADH_data_fill$cv <- percentCV_gw(ADH_data_fill[(info_columns+1):ncol(ADH_data_fill)])
   ADH_data_fill$sd <- apply(ADH_data_fill[(info_columns+1):(ncol(ADH_data_fill)-1)], 1, FUN = function(x) {sd(x)})
@@ -94,6 +99,9 @@ data_normalize <- data_fill
 #---------------------------------------------------------------------------------------------
 #Normalize Section, normalize -> plots -> peptide to protein -> stats/PCA
 #---------------------------------------------------------------------------------------------
+# Raw Impute strategy only
+data_fill_raw <- fill_only(data_normalize, data_fill, "Fill_Raw")
+data_fill_raw_final <- dostats(data_fill_raw, "Fill_Raw")
 
 # SL - global scaling value, sample loading normalization I * (avgSumAvgI/AvgI)
 data_sl <- sl_normalize(data_normalize, data_fill, "SL_Norm")
@@ -143,25 +151,17 @@ data_localsl_final <- dostats(data_localsl, "LocalSL_Norm")
 if (normalize_to_protein) {data_protein_norm <- protein_normalize(data_fill, "Protein_Norm")
   data_protein_norm_final <- dostats(data_protein_norm, "Protein_Norm")}
 
-# Raw - impute raw or fill raw plots
-if (holes=="Impute") {
-  data_raw_impute <- hole_fill(data_fill)
-  Simple_Excel(cbind(annotate_df, data_raw_impute), str_c(file_prefix3, "_Peptide_Raw_Impute.xlsx", collapse = " "))
-  Plot_All_gw(data_raw_impute, "Raw Impute")
-  data_raw_impute <- cbind(annotate_df, data_raw_impute)
-  if (peptide_to_protein){data_raw_impute <- collapse_peptide(data_raw_impute)}
-}else{
-  Simple_Excel(cbind(annotate_df, data_fill), str_c(file_prefix3, "_Peptide_FilledRaw.xlsx", collapse = " "))
-  Plot_All_gw(data_fill, "FilledRaw")
-  data_fill <- cbind(annotate_df, data_fill)
-  if (peptide_to_protein){data_fill <- collapse_peptide(data_fill)}
-}
+
+# Raw only - fill with area floor
+data_raw_floor <- data_raw
+data_raw_floor[data_raw_floor==0] <- area_floor
+data_raw_final <- dostats(data_raw_floor, "Raw")
 
 
 cv_stats(summary_cv, total_cv)
 
 
-data_raw_final <- dostats(data_raw, "Raw")
+
 
 
 

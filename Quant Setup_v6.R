@@ -1,63 +1,6 @@
 rm(list = ls())
-#-------------------------------------------
-# User input
-#-------------------------------------------
-
-# excel export from PD
-input_data <- "4227_Striatum_TMT_SL_IRS_Norm.xlsx"
-input_sample_info <-"4227 TMT Striatum Combined 120618 Sample Info2.xlsx"
-
-# excel export from PD for decoy data
-# decoy_data <- read_excel("4983_MS2_decoyPSM_041918.xlsx", 1)
-# file prefix for excel outputs
-file_prefix <- "4227_Cortex"
-
-psm_input <- FALSE
-psm_to_peptide <- FALSE
-
-protein_peptide_input <- FALSE #PD export with nested protein/peptide, need specific columns
-peptide_to_protein <- FALSE  #collapse from peptide back to protein for final output
-
-normalize_to_protein <- FALSE  #set accession numbers below for list of target proteins
-pair_comp <- FALSE  # pairwise comparison
-
-adh_spike <- FALSE  #add adh plots if spiked into sample
-
-holes <- "Floor"  # "Impute", Average", "Minimum", "Floor"
-intensity_cutoff <- 5000000  # if a replicate group has >50% missing values and a measured value is above this cutoff then the measured value is a misalignment, value will be removed
-area_floor <- 0.1
-
-
-pvalue_cutoff <- 0.05  # extra worksheet is created in excel for each comparison, subset with these cutoff values
-fc_cutoff <- 1.5
-
-#color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
-color_choices <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-# Protein accession numbers for plots and normalization
-adh_list <- c("P00330")
-bait_list <- c("Q8K3K8")
-avidin_list <- c("P02701")
-#avidin_list <- c("P22629")  #steptavidin
-casein_list <- c("P02662", "P02663")
-carbox_list <- c("Q05920", "Q91ZA3", "Q5SWU9") #mouse
-#carbox_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #zebrafish
-#bira_list <- c("P06709")
-bira_list <- c("O66837") #biotin ligase 
-ko1_list <- c("F6SEU4")
-ko2_list <- c("O08759")
-ko3_list <- c("Q80Z38")
-ko4_list <- c("Q4ACU6")
-#protein_norm_list <- c("F1QPL7", "A0A0R4IFJ4", "F1QM37") #use these if normalize_to_protein <- TRUE
-protein_norm_list <- c("O66837")
-
-#-----------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------
-
-options(digits=3)
-
+library(tcltk)
+library(tidyr)
 library(stringr)
 library(readxl)
 library(tidyverse)
@@ -73,6 +16,27 @@ library(robustbase)
 library(gplots) 
 library(limma)
 library(ggpubr)
+library(tibble)
+library(rgl)
+library(pca3d)
+
+#-------------------------------------------
+# User input
+#-------------------------------------------
+
+# Design and Sample Info
+#study_design <-"5062 121218 Sample Info.xlsx"
+study_design <- file.choose()
+input_data <- file.choose()
+#-----------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
+
+
+#color_choices <- c("red", "green", "blue", "yellow", "grey", "orange", "purple", "black")
+color_choices <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+options(digits=3)
 
 source("Quant Functions Misc v6.R")
 source("Quant Functions Norm v6.R")
@@ -80,9 +44,42 @@ source("Quant Functions Impute v6.R")
 source("Quant Functions Stats v6.R")
 source("Quant Functions Plots v6.R")
 
-forward_data <- read_excel(input_data, 1)
-sample_info <- read_excel(input_sample_info, 1)
+design_info <- read_excel(study_design, sheet="Design")
+sample_info <- read_excel(study_design, sheet="SampleList")
 
+
+#input_data <- as.character(design_info[1,2])
+file_prefix <- as.character(design_info[2,2])
+psm_input <- as.logical(design_info[3,2])
+psm_to_peptide <- as.logical(design_info[4,2])
+protein_peptide_input <- as.logical(design_info[5,2])
+peptide_to_protein <- as.logical(design_info[6,2])
+normalize_to_protein <- as.logical(design_info[7,2])
+pair_comp <- as.logical(design_info[9,2])
+adh_spike <- as.logical(design_info[10,2])
+missings <- as.character(design_info[11,2])
+intensity_cutoff <- as.numeric(design_info[12,2])
+area_floor <- as.numeric(design_info[13,2])
+pvalue_cutoff <- as.numeric(design_info[14,2])
+fc_cutoff <- as.numeric(design_info[15,2])
+
+adh_list <- as.character(na.omit(t(design_info[16,2:11])))
+bait_list <- as.character(na.omit(t(design_info[17,2:11])))
+avidin_list <- as.character(na.omit(t(design_info[18,2:11])))
+casein_list <- as.character(na.omit(t(design_info[19,2:11])))
+carbox_list <- as.character(na.omit(t(design_info[20,2:11])))
+bira_list <- as.character(na.omit(t(design_info[21,2:11])))
+ko1_list <- as.character(na.omit(t(design_info[22,2:11])))
+ko2_list <- as.character(na.omit(t(design_info[23,2:11])))
+ko3_list <- as.character(na.omit(t(design_info[24,2:11])))
+ko4_list <- as.character(na.omit(t(design_info[25,2:11])))
+protein_norm_list <- as.character(na.omit(t(design_info[8,2:11])))
+
+misaligned_filter <- as.logical(design_info[26,2])
+impute_method <- as.character(design_info[27,2])
+
+#read data file
+forward_data <- read_excel(input_data, 1)
 # number of groups, comparisons are not hardcoded, R will extract information from excel SampleData file
 sample_number <- nrow(sample_info)
 comp_number <- length(grep(x = colnames(sample_info), pattern = "^Comp"))
@@ -90,7 +87,7 @@ comp_number <- length(grep(x = colnames(sample_info), pattern = "^Comp"))
 sample_info$Count <- sapply(sample_info$Group, function(string) sum(string==sample_info$Group))
 
 # create unqiue group dataframe with sample number
-sample_groups <- sample_info[5:ncol(sample_info)]
+sample_groups <- sample_info[6:ncol(sample_info)]
 sample_groups <- sample_groups %>% distinct(Group, .keep_all = TRUE)
 group_number <- nrow(sample_groups)
 
@@ -147,26 +144,29 @@ sample_info$Header1 <- str_c(sample_info$ID, " ", sample_info$Group)
 sample_info$Header2 <- str_c(sample_info$ID, " ", sample_info$Group, " Normalized")
 
 
+#Create DEP summarized experiment
+dep_se <- data.frame(cbind(sample_info$Label, sample_info$Group, sample_info$Replicate))
+colnames(dep_se) <- c("label", "condition", "replicate")
+dep_se$label <- as.character(dep_se$label)
+dep_se$condition <- as.character(dep_se$condition)
+dep_se$replicate <- as.numeric(dep_se$replicate)
+
+
 #create dataframe to hold cv summaries for normalization strategies
 summary_cv <- data.frame(sample_groups$Group)
 
 # create subdirectory to store csv and plots
-if(dir.exists(file.path(".", "output_files"))) { unlink(file.path(".", "output_files"), recursive = TRUE, force=TRUE)}
-ifelse(!dir.exists(file.path(".", "output_files")), dir.create(file.path(".", "output_files")), FALSE)
-output_dir <- ".//output_files//"
+data_dir <- file_prefix
+output_dir <- create_dir(data_dir)
 file_prefix1 <- str_c(output_dir, file_prefix)
 
-if(dir.exists(file.path(".", "output_files//Backup"))) { unlink(file.path(".", "output_files//Backup"), recursive = TRUE, force=TRUE)}
-ifelse(!dir.exists(file.path(".", "output_files//Backup")), dir.create(file.path(".", "output_files//Backup")), FALSE)
-output_dir2 <- ".//output_files//Backup//"
+output_dir2 <- create_dir(str_c(data_dir,"//Backup"))
 
-if(dir.exists(file.path(".", "output_files//Extra"))) { unlink(file.path(".", "output_files//Extra"), recursive = TRUE, force=TRUE)}
-ifelse(!dir.exists(file.path(".", "output_files//Extra")), dir.create(file.path(".", "output_files//Extra")), FALSE)
-output_dir3 <- ".//output_files//Extra//"
+output_dir3 <- create_dir(str_c(data_dir,"//Extra"))
 file_prefix3 <- str_c(output_dir3, file_prefix)
 
-file.copy(input_data, str_c(output_dir2, input_data))
-file.copy(input_sample_info, str_c(output_dir2, input_sample_info))
+file.copy(input_data, str_c(output_dir2, basename(input_data)))
+file.copy(study_design, str_c(output_dir2, basename(study_design)))
 file.copy("Quant Setup_v6.R", str_c(output_dir2, "Quant Setup_v6.R"))
 file.copy("Quant Main_v6.R", str_c(output_dir2, "Quant Main_v6.R"))
 file.copy("Quant Functions Misc v6.R", str_c(output_dir2, "Quant Functions Misc v6.R"))
