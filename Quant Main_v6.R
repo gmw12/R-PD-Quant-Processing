@@ -49,6 +49,7 @@ Simple_Excel(cbind(annotate_df, data_raw), str_c(file_prefix3, "_Peptide_Raw.xls
 Plot_All_gw(data_raw, "Raw")
 data_raw <- cbind(annotate_df, data_raw)
 if (peptide_to_protein){data_raw <- collapse_peptide(data_raw)}
+
 # if peptide to protein need to reassign info columns and headers
 if (peptide_to_protein){
   info_columns_protein <- ncol(data_raw) - sample_number

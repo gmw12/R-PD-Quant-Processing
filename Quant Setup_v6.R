@@ -26,7 +26,11 @@ library(pca3d)
 
 # Design and Sample Info
 #study_design <-"5062 121218 Sample Info.xlsx"
+msgBox <- tkmessageBox(title = "Design",
+                       message = "Load study design file", icon = "info", type = "ok")
 study_design <- file.choose()
+msgBox <- tkmessageBox(title = "Data",
+                       message = "Load raw data file", icon = "info", type = "ok")
 input_data <- file.choose()
 #-----------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------
@@ -176,3 +180,4 @@ file.copy("Quant Functions Plots v6.R", str_c(output_dir2, "Quant Functions Plot
 file.copy("Quant Functions Norm v6.R", str_c(output_dir2, "Quant Functions Norm v6.R"))
 
 #rmarkdown::render("Quant Main_v5.R")
+

@@ -31,6 +31,7 @@ protein_to_peptide <- function(data_in){
       data_in[i,4] <- set_description
     }
   }
+  
   peptide_header <- data_in[2,]
   data_in <- subset(data_in, Master=="High")
   colnames(data_in) <- peptide_header
@@ -39,11 +40,14 @@ protein_to_peptide <- function(data_in){
   data_in <- data_in[,-1]
   colnames(data_in)[colnames(data_in) == 'Quan Usage'] <- 'Used'
   data_in <- subset(data_in, Used=="Used")
+  
   while (sapply("Abundance", grepl, colnames(data_in[ ,ncol(data_in)]))==FALSE){
     data_in <- data_in[, -ncol(data_in)]
   }
+  
   data_in[, (ncol(data_in)-sample_number+1):ncol(data_in)] <- 
     sapply(data_in[, (ncol(data_in)-sample_number+1):ncol(data_in)], as.numeric)
+  
   return(data_in)
 }
 

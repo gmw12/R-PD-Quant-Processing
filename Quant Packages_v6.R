@@ -1,6 +1,6 @@
-install.packages('packrat')
-packrat::init()
-packrat::snapshot()
+#install.packages('packrat')
+#packrat::init()
+#packrat::snapshot()
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
