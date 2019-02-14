@@ -47,6 +47,8 @@ install.packages('ggpubr')
 
 install.packages('tibble')
 
+install.packages('shinythemes')
+install.packages('DT')
 #---------------------------------------------------------------------------------------------
 
 

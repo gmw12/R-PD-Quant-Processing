@@ -4,6 +4,7 @@ create_dir <- function(name){
   return(str_c(".//", name, "//"))
 }
 
+
 # input PD protein/peptide export and output peptide (keeps master protein assignment)
 protein_to_peptide <- function(data_in){
   data_in[,1][is.na(data_in[,1])] <- ""  
@@ -183,11 +184,9 @@ collapse_peptide <- function(peptide_data){
   test1 <- test1[ , -3]
   test2 <- test1 %>% group_by(Accession, Description) %>% summarise_all(funs(sum))
   test2 <- ungroup(test2)
+  test2 %>% mutate_if(is.numeric, ~round(., 1))
   return(test2)
 } 
-
-
-
 
 # create final excel documents
 Simple_Excel <- function(df, filename) {
@@ -198,14 +197,12 @@ Simple_Excel <- function(df, filename) {
   saveWorkbook(wb, filename, overwrite = TRUE)
 }
 
-
 # create final excel documents
 Final_Excel_gw <- function(df, filename) {
   require(openxlsx)
   wb <- createWorkbook()
   addWorksheet(wb, deparse(substitute(df)))
   writeData(wb, sheet =1, df)  
-  
   z=1
   for(i in 1:comp_number)  {
     comp_string <- comp_groups$comp_name[i]
@@ -218,5 +215,136 @@ Final_Excel_gw <- function(df, filename) {
   }
   saveWorkbook(wb, filename, overwrite = TRUE)
 }
+
+
+shiny_norm_list <- function(){
+  shiny_norm <- c("data_raw", "data_fill_raw", "data_sl", "data_sltmm", "data_tmm")
+  if (normalize_to_protein) {shiny_norm <-c(shiny_norm, "data_protein_norm")} 
+  if (use_ti) {shiny_norm <- c(shiny_norm, "data_ti")} 
+  if (use_ai) {shiny_norm <- c(shiny_norm, "data_ai")} 
+  if (use_mi) {shiny_norm <- c(shiny_norm, "data_mi")} 
+  if (use_lr) {shiny_norm <- c(shiny_norm, "data_lr")} 
+  if (use_vsn) {shiny_norm <- c(shiny_norm, "data_vsn")} 
+  if (use_quantile) {shiny_norm <- c(shiny_norm, "data_quantile")} 
+  if (use_loess) {shiny_norm <- c(shiny_norm, "data_loess")}   
+  if (use_localsl) {shiny_norm <- c(shiny_norm, "data_localsl")}   
+  names(shiny_norm) <- shiny_norm
+return(shiny_norm)
+}
+
+shiny_norm_list_final <- function(){
+  shiny_norm <- c("data_raw_final", "data_fill_raw_final", "data_sl_final", "data_sltmm_final", "data_tmm_final")
+  if (normalize_to_protein) {shiny_norm <-c(shiny_norm, "data_protein_norm_final")} 
+  if (use_ti) {shiny_norm <- c(shiny_norm, "data_ti_final")} 
+  if (use_ai) {shiny_norm <- c(shiny_norm, "data_ai_final")} 
+  if (use_mi) {shiny_norm <- c(shiny_norm, "data_mi_final")} 
+  if (use_lr) {shiny_norm <- c(shiny_norm, "data_lr_final")} 
+  if (use_vsn) {shiny_norm <- c(shiny_norm, "data_vsn_final")} 
+  if (use_quantile) {shiny_norm <- c(shiny_norm, "data_quantile_final")} 
+  if (use_loess) {shiny_norm <- c(shiny_norm, "data_loess_final")}   
+  if (use_localsl) {shiny_norm <- c(shiny_norm, "data_localsl_final")}   
+  names(shiny_norm) <- shiny_norm
+return(shiny_norm)
+}
+
+#-------------------------------------------------------------------------------------
+# Use psm and peptide forward and decoy data to export peptide list with 1% FDR based on psm
+#-------------------------------------------------------------------------------------
+peptide_psm_set_fdr <- function(){
+  psmfdr_dir <- create_dir(str_c(data_dir,"//PSM_FDR"))
+  psm_prefix <- str_c(psmfdr_dir, file_prefix)
+  
+  file.copy(forward_psm_name, str_c(psmfdr_dir, basename(forward_psm_name)))
+  file.copy(decoy_psm_name, str_c(psmfdr_dir, basename(decoy_psm_name)))
+  file.copy(forward_peptide_name, str_c(psmfdr_dir, basename(forward_peptide_name)))
+  file.copy(decoy_peptide_name, str_c(psmfdr_dir, basename(decoy_peptide_name)))
+  
+  forward_psm <- subset(forward_psm, forward_psm$`Ions Score`>10)
+  decoy_psm <- subset(decoy_psm, decoy_psm$`Ions Score`>10)
+  
+  psm_record <- c(nrow(forward_psm), nrow(decoy_psm), nrow(forward_peptide), nrow(decoy_peptide))
+  psm_record_names <- c("psm_forward", "psm_decoy", "peptide_forward", "peptide_decoy")
+  
+  forward_psm$fdr <- rep("forward", nrow(forward_psm))
+  decoy_psm$fdr <- rep("decoy", nrow(decoy_psm))
+  
+  isv1 <- forward_psm$`Ions Score`
+  isv2 <- decoy_psm$`Ions Score`
+  isv3 <- c(isv1, isv2)
+  
+  fdr1 <- forward_psm$fdr
+  fdr2 <- decoy_psm$fdr
+  fdr3 <- c(fdr1, fdr2)
+  
+  combo_psm <-forward_psm  
+  combo_psm[nrow(forward_psm)+nrow(decoy_psm),] <- NA
+  combo_psm$Ions_Score <- isv3
+  combo_psm$fdr <- fdr3
+  
+  combo_psm <- combo_psm[order(combo_psm$Ions_Score),]
+  rcount <- nrow(combo_psm)
+  
+  for (i in 1:rcount) {
+    testthis <- data.frame(table(combo_psm$fdr[i:rcount]))
+    test_fdr <- testthis$Freq[1] / testthis$Freq[2] * 100
+    if (test_fdr <= 1.0000) {
+      break
+    }
+  }
+  
+  fdr_psm <- combo_psm[i:rcount, ]
+  fdr_psm <- fdr_psm[order(-fdr_psm$Ions_Score), ]
+  psm_record_names <- c(psm_record_names, "ForwardDecoy", "IonScore")
+  psm_record <- c(psm_record, nrow(fdr_psm), min(fdr_psm$Ions_Score))
+  fdr_psm <- fdr_psm[fdr_psm$fdr == "forward", ]
+  fdr_psm$fdr <- NULL
+  fdr_psm$Ions_Score <- NULL
+  psm_record_names <- c(psm_record_names, "Forward")
+  psm_record <- c(psm_record, nrow(fdr_psm))
+  
+  Simple_Excel(fdr_psm, str_c(psmfdr_dir, "_PSM.xlsx"))
+  
+  fdr_psm$Match <- str_c(fdr_psm$`Sequence`,fdr_psm$`m/z [Da]`)
+  peptide_psmfdr <- forward_peptide
+  peptide_psmfdr$Match <- str_c(peptide_psmfdr$`Sequence`,peptide_psmfdr$`m/z [Da] (by Search Engine): Mascot`)
+  
+  unique_fdr_psm <- fdr_psm$Match
+  unique_fdr_psm <- unique(unique_fdr_psm)
+  
+  peptide_psmfdr <- subset(peptide_psmfdr, Match %in% unique_fdr_psm)
+  Simple_Excel(peptide_psmfdr, str_c(psm_prefix, "_Peptide.xlsx"))
+  if (phos_peptide_only){
+    peptide_psmfdr <- peptide_psmfdr[grep("Phospho", peptide_psmfdr$Modifications),]
+    Simple_Excel(peptide_psmfdr, str_c(psm_prefix, "_PhosPeptide.xlsx"))
+  }
+
+  # find fdr of peptides directly with ion score from psm
+  psm_cuttoff <- min(fdr_psm$`Ions Score`)
+  
+  forward_peptide$fdr <- "forward"
+  decoy_peptide$fdr <- "decoy)"
+  all_peptide1 <- c(forward_peptide$fdr, decoy_peptide$fdr)
+  all_peptide2 <- c(forward_peptide$`Ions Score (by Search Engine): Mascot`, decoy_peptide$`Ions Score (by Search Engine): Mascot`)
+  all_peptide <- cbind(all_peptide1, all_peptide2)
+  all_peptide <- subset(all_peptide, all_peptide2 > psm_cuttoff)
+  
+  psm_record_names <- c(psm_record_names, "PeptideForwardDecoy")
+  psm_record <- c(psm_record, nrow(all_peptide))
+  
+  all_peptide <- data.frame(all_peptide)
+  all_count <- nrow(all_peptide)
+  testforward <- subset(all_peptide, all_peptide1 == "forward")
+  peptideFDR <- (1 - (all_count/nrow(testforward)))*100
+  
+  psm_record_names <- c(psm_record_names, "PeptideForward", "PeptideFDR")
+  psm_record <- c(psm_record, nrow(all_peptide), peptideFDR )
+  psm_stat <- cbind(psm_record_names, psm_record)
+  Simple_Excel(psm_stat, str_c(psm_prefix, "_fdr_stats.xlsx"))
+  
+  peptide_psmfdr$Match <- NULL
+  
+  return(peptide_psmfdr)
+}
+
 
 

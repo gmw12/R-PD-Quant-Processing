@@ -114,6 +114,18 @@ barplot_gw <- function(x,y,plot_dir) {
 
 
 #Bar plot-------------------------------------------------
+barplot_adh <- function(x,name,y,plot_dir) {
+  png(filename=str_c(plot_dir, y, "_barplot2.png"), width = 888, height = 571)  
+  barplot(x, 
+          col = rainbow(n=12),
+          names.arg = name,
+          cex.names = 0.8,
+          las=2,
+          main = y)
+  dev.off()
+}
+
+#Bar plot-------------------------------------------------
 barplot_log2_gw <- function(x,y,plot_dir) {
   x <- colSums(x)
   x<-log(x,2)
@@ -139,7 +151,7 @@ plotDensities_gw <- function(x,y,plot_dir) {
 ?pca3d
 #PCA 2D 3D-------------------------------------------------
 PCA_gw <- function(x,y, plot_dir) {
-  x <- x[(info_columns_protein+1):ncol(x)] # strip off info columns
+  x <- x[(info_columns_final+1):ncol(x)] # strip off info columns
   require(pca3d)
   require(rgl)
   x_transpose <- t(x)
@@ -160,7 +172,7 @@ PCA_gw <- function(x,y, plot_dir) {
   df_out <- as.data.frame(x_pca$x)
   file_name <- str_c(plot_dir, y, "_PCA2D.png")
   ggplot(df_out,aes(x=PC1,y=PC2,color=x_gr )) +
-    geom_point(size =2) +
+    geom_point(size =3) +
     theme(legend.title=element_blank()) +
     ggtitle(y) +
     theme(plot.title = element_text(hjust = 0.5))
@@ -196,6 +208,10 @@ volcano_gw <- function(x, comp_name, title, plot_dir)
 #Histogram for total intensity-------------------------------------------------
 histogram_gw <- function(x,title,plottitle)
 {
+  testthis1 <- as.matrix(log2(x))
+  x_mean <- mean(testthis1, na.rm=TRUE)
+  x_stdev <- sd(testthis1, na.rm=TRUE)
+  
   file_name <- str_c(output_dir, title, "_histogram.png")
   testgather <- gather(x)
   testgather <- subset(testgather, testgather$value>0)
@@ -203,17 +219,23 @@ histogram_gw <- function(x,title,plottitle)
   ggplot(testgather, aes(value))+
     geom_histogram(bins=100, fill="blue") +
     geom_vline(aes(xintercept = log2(intensity_cutoff))) +
+    geom_vline(aes(xintercept = x_mean)) +
+    geom_vline(aes(xintercept = (x_mean + x_stdev))) +
+    geom_vline(aes(xintercept = (x_mean - x_stdev))) +
     ggtitle(plottitle)+
     theme(plot.title = element_text(hjust = 0.5),
           legend.position = "none") 
   ggsave(file_name, width=5, height=4)
+  x_mean <- 2^x_mean
+  if (x_mean < intensity_cutoff){intensity_cutoff<-x_mean}
+  return(intensity_cutoff)
 }
 
 
 #Heat map-------------------------------------------------
 heatmap_gw <- function(y,plottitle,plot_dir)
 {
-  y <- y[(info_columns_protein+1):ncol(y)] # strip off info columns
+  y <- y[(info_columns_final+1):ncol(y)] # strip off info columns
   y <- log2(y)
   y <- data.matrix(y)
   ## Row- and column-wise clustering 
@@ -222,7 +244,7 @@ heatmap_gw <- function(y,plottitle,plot_dir)
   ## Tree cutting
   mycl <- cutree(hr, h=max(hr$height)/1.5); mycolhc <- rainbow(length(unique(mycl)), start=0.1, end=0.9); mycolhc <- mycolhc[as.vector(mycl)] 
   ## Plot heatmap 
-  mycol <- colorpanel(40, "darkblue", "yellow", "white") # or try redgreen(75)
+  mycol <- redgreen(75) #colorpanel(40, "darkblue", "yellow", "white") # or try redgreen(75)
   png(filename=str_c(plot_dir, plottitle, "_heatmap.png"), width = 888, height = 571)  
   heatmap.2(y, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=mycol, labCol= treatment_groups, 
             scale="row", density.info="none", trace="none", RowSideColors=mycolhc, main = plottitle) 

@@ -3,6 +3,7 @@
 # fix missings - by replicate group if more than half of the values exist, replace missings with average, 
 #if less than half values exist all values go to area_floor
 missing_average <- function(data_in){
+  data_in[data_in==0] <- NA
   for(i in 1:group_number) 
   {
     assign(group_list[i], data.frame(data_in[c(group_startcol[i]:group_endcol[i])]))
@@ -27,10 +28,9 @@ missing_average <- function(data_in){
 }
 
 
-
-
 # fix missings - by replicate group if more than half of the values exist, replace missings with average, if less than half values exist all values go to area_floor
 missing_minimum <- function(df){
+  df[df==0] <- NA
   df$minimum <- apply(df, 1, FUN = function(x) {min(x[x > 0])})
   for (j in 1:nrow(df)){
     for (k in 1:sample_number){
@@ -40,7 +40,15 @@ missing_minimum <- function(df){
   return(df[1:sample_number])
 }
 
-
+# Imputing missing values using the EM algorithm proposed in section 5.4.1 of Schafer (1997).
+missing_mle <- function(df){
+  require(imp4p)
+  df[df==0] <- NA
+  df <- log2(df)
+  df_mle <- impute.mle(df, group_factor) 
+  df_mle <- data.frame(df_mle)
+  return(df_mle)
+}
 
 # imputation of missing data
 missing_fill <- function(data_in){
@@ -82,7 +90,7 @@ missing_fill <- function(data_in){
        }
     }
     
-    # if number of missing greater than mimimum and measured value is above intensity cuttoff then remove measured value
+    # if number of missing greater than minimum and measured value is above intensity cuttoff then remove measured value
     if (misaligned_filter){
       for (j in 1:nrow(data_in)){
         for (k in 1:sample_groups$Count[i]){
@@ -95,7 +103,7 @@ missing_fill <- function(data_in){
         }
       }
 
-    # missing > minimum will imputed at background level, bottom 5%, random normal distribution
+    # missing > minimum will impute at background level, bottom 5%, random normal distribution
     for (j in 1:nrow(data_in)){
       for (k in 1:sample_groups$Count[i]){
         if (df[j,k] == 0.0 && df$missings[j] > df$min[j]) { 
@@ -119,6 +127,7 @@ missing_fill <- function(data_in){
   df3[df3 ==1 ] <- 0
   return(df3)
 }
+
 
 # Local least squares imputation (lls)
 lls_fill <- function(data_in){

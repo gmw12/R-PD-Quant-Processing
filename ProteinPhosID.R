@@ -1,6 +1,6 @@
-MotifPhos <- read_excel("5081_GluC_TiOx_Phos_for_Motif.xlsx", 1)
-Fasta_file <- read_excel("5081_Fasta.xlsx", 1)
-file_prefix <- "5081_GluC_TiOX_Motif_Final.xlsx"
+MotifPhos <- read_excel("5198_Phos_for_MotifX.xlsx", 1)
+Fasta_file <- read_excel("5198_Fasta.xlsx", 1)
+file_prefix <- "5198_Phos_020618_Motif_Final.xlsx"
 
 phosmotif<- "[KR][KR].[ST]\\*."
 

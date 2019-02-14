@@ -125,6 +125,15 @@ pvalue_gw <- function(x,y){
   return(temp_pval)
 }
 
+exactTest_gw <- function(x,y){
+  #x <- log2(x)
+  #y <- log2(y)
+  et <- exactTestDoubleTail(x,y) 
+  return(et)
+} 
+  
+
+
 #x<-comp_N_data
 #y<-comp_D_data
 limma_gw <- function(x,y, comp_name, plot_dir){
@@ -165,8 +174,8 @@ old_limma_gw <- function(x,y){
 
 #Fold change, pvalue, export volcano, return organized table for output-------------------------------------------------
 stat_test_gw <- function(data_in, title, plot_dir) {
-  annotate_in <- data_in[1:info_columns_protein]
-  data_in <- data_in[(info_columns_protein+1):ncol(data_in)]
+  annotate_in <- data_in[1:info_columns_final]
+  data_in <- data_in[(info_columns_final+1):ncol(data_in)]
   #start df for stats
   stat_df <- annotate_in[1:1]
   #generate %CV's for each group
@@ -182,13 +191,14 @@ stat_test_gw <- function(data_in, title, plot_dir) {
     stat_df[ , comp_groups$fc2[i]] <- foldchange_decimal_gw(comp_N_data, comp_D_data)
     stat_df[ , comp_groups$pval[i]] <- pvalue_gw(comp_N_data, comp_D_data)
     stat_df[ , comp_groups$limma_pval[i]] <- limma_gw(comp_N_data, comp_D_data, comp_groups$comp_name[i], plot_dir)
+    stat_df[ , comp_groups$exactTest[i]] <- exactTest_gw(comp_N_data, comp_D_data)
     #volcano plot
     volcano_gw(stat_df, comp_groups$comp_name[i], title, plot_dir)
   } 
   
   # Create tables for excel--------------------------------------------------
   stat_df <- stat_df[2:ncol(stat_df)]
-  stat_df <- stat_df[,!grepl("_FC2",names(stat_df))] #removes decimal fold change, not needed after volcano plot
+  #stat_df <- stat_df[,!grepl("_FC2",names(stat_df))] #removes decimal fold change, not needed after volcano plot
   #stat_df <- stat_df[,!grepl("LimmaPval",names(stat_df))] #removes limma pval 
   data_table <- cbind(data_raw, data_in, stat_df)
   return(data_table)
@@ -200,46 +210,51 @@ BioID_normalize_gw <- function(data_in, data_title, plot_dir) {
   
   #--------------------------------BirA-----O66837-------------------------------
   bira_test_raw <-subset(data_in, data_in$Accession %in% bira_list)
-  bira_test_raw <- bira_test_raw[(info_columns_protein+1):ncol(data_in)]
+  bira_test_raw <- bira_test_raw[(info_columns_final+1):ncol(data_in)]
   barplot_gw(bira_test_raw, str_c("BirA_", data_title), plot_dir)
   
+  #--------------------------------Casein-----P02662 P02663-------------------------------
+  casein_test_raw <-subset(data_in, data_in$Accession %in% casein_list)
+  casein_test_raw <- casein_test_raw[(info_columns_final+1):ncol(data_in)]
+  barplot_gw(casein_test_raw, str_c("Casein_", data_title), plot_dir)
   
   #--------------------------------Carboxylase-----Q05920, Q91ZA3-------------------------------
   carbox_test_raw <-subset(data_in, data_in$Accession %in% carbox_list)
-  carbox_test_raw <- carbox_test_raw[(info_columns_protein+1):ncol(data_in)]
+  carbox_test_raw <- carbox_test_raw[(info_columns_final+1):ncol(data_in)]
   barplot_gw(carbox_test_raw, str_c("Carbox ", data_title), plot_dir)
   
   #--------------------------------Avidin------------------------------------
   avidin_test_raw <-subset(data_in, data_in$Accession %in% avidin_list)
-  avidin_test_raw <- avidin_test_raw[(info_columns_protein+1):ncol(data_in)]
+  avidin_test_raw <- avidin_test_raw[(info_columns_final+1):ncol(data_in)]
   barplot_gw(avidin_test_raw, str_c("Avidin ", data_title), plot_dir)
   
   #--------------------------------Bait-------------------------------
   bait_test_raw <-subset(data_in, data_in$Accession %in% bait_list)
-  bait_test_raw <- bait_test_raw[(info_columns_protein+1):ncol(data_in)]
+  bait_test_raw <- bait_test_raw[(info_columns_final+1):ncol(data_in)]
   barplot_gw(bait_test_raw, str_c("Bait ", data_title), plot_dir)
   
   #--------------------------------Bait-------------------------------
-  ko_test_raw <-subset(data_in, data_in$Accession %in% ko1_list)
-  ko_test_raw <- ko_test_raw[(info_columns_protein+1):ncol(data_in)]
-  barplot_gw(ko_test_raw, str_c(ko1_list, " Knock Out ", data_title), plot_dir)
+  ko_test_raw <-subset(data_in, data_in$Accession %in% protein1_list)
+  ko_test_raw <- ko_test_raw[(info_columns_final+1):ncol(data_in)]
+  barplot_gw(ko_test_raw, str_c(protein1_list, "_", data_title), plot_dir)
+  
   #--------------------------------Bait-------------------------------
-  ko_test_raw <-subset(data_in, data_in$Accession %in% ko2_list)
-  ko_test_raw <- ko_test_raw[(info_columns_protein+1):ncol(data_in)]
-  barplot_gw(ko_test_raw, str_c(ko2_list, " Knock Out ", data_title), plot_dir)
+  ko_test_raw <-subset(data_in, data_in$Accession %in% protein2_list)
+  ko_test_raw <- ko_test_raw[(info_columns_final+1):ncol(data_in)]
+  barplot_gw(ko_test_raw, str_c(protein2_list, "_", data_title), plot_dir)
   #--------------------------------Bait-------------------------------
-  ko_test_raw <-subset(data_in, data_in$Accession %in% ko3_list)
-  ko_test_raw <- ko_test_raw[(info_columns_protein+1):ncol(data_in)]
-  barplot_gw(ko_test_raw, str_c(ko3_list, " Knock Out ", data_title), plot_dir)
+  ko_test_raw <-subset(data_in, data_in$Accession %in% protein3_list)
+  ko_test_raw <- ko_test_raw[(info_columns_final+1):ncol(data_in)]
+  barplot_gw(ko_test_raw, str_c(protein3_list, "_", data_title), plot_dir)
   #--------------------------------Bait-------------------------------
-  ko_test_raw <-subset(data_in, data_in$Accession %in% ko4_list)
-  ko_test_raw <- ko_test_raw[(info_columns_protein+1):ncol(data_in)]
-  barplot_gw(ko_test_raw, str_c(ko4_list, " Knock Out ", data_title), plot_dir)
+  ko_test_raw <-subset(data_in, data_in$Accession %in% protein4_list)
+  ko_test_raw <- ko_test_raw[(info_columns_final+1):ncol(data_in)]
+  barplot_gw(ko_test_raw, str_c(protein4_list, "_", data_title), plot_dir)
   
   
   #--------------------------------ADH-------------------------------
   adh_test_raw <-subset(data_in, data_in$Accession %in% adh_list)
-  adh_test_raw <- adh_test_raw[(info_columns_protein+1):ncol(data_in)]
+  adh_test_raw <- adh_test_raw[(info_columns_final+1):ncol(data_in)]
   barplot_gw(adh_test_raw, str_c("ADH ",data_title), plot_dir)
   
 }  
@@ -270,7 +285,7 @@ cv_stats <- function(summary_cv, total_cv) {
 
 #collect CV statistics
 cv_stats_gw <- function(data_out, data_title){
-  cv_start <- info_columns_protein+sample_number+sample_number+1
+  cv_start <- info_columns_final+sample_number+sample_number+1
   avg_cv <- colMeans(data_out[cv_start:(cv_start+group_number-1)])
   summary_cv <-get("summary_cv",.GlobalEnv)
   summary_cv <- cbind(summary_cv, avg_cv)
